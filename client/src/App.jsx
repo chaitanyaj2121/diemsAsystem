@@ -6,12 +6,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 // Import your components
 import HodLogin from "./components/HodLogin" // Assuming you have this
 import HodDashboard from "./components/HodDashboard"
-import TeacherLogin from "./components/TeacherLogin" // <--- NEW
-import TeacherSignup from "./components/TeacherSignup" // <--- NEW
+import TeacherLogin from "./components/TeacherLogin"
+import TeacherSignup from "./components/TeacherSignup"
 import TeacherDashboard from "./components/TeacherDashboard"
-
-// import TeacherDashboard from './components/TeacherDashboard'; // Will create in next prompt
-
 function App() {
   return (
     <Router>

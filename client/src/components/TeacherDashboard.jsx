@@ -13,8 +13,10 @@ import {
   addDoc,
 } from "firebase/firestore"
 import { useNavigate } from "react-router-dom"
-import ManageStudents from "./ManageStudents" // Keep this import
-import TakeAttendance from "./TakeAttendance" // Import the new TakeAttendance component
+import ManageStudents from "./ManageStudents"
+import TakeAttendance from "./TakeAttendance"
+import AttendanceReportGenerator from "./AttendanceReportGenerator"
+import AttendanceSummary from "./AttendanceSummary" // Import the new component
 
 const TeacherDashboard = () => {
   const [teacherData, setTeacherData] = useState(null)
@@ -266,15 +268,12 @@ const TeacherDashboard = () => {
     </div>
   )
 
-  // New ManageStudentsTab component that renders the ManageStudents component
   const ManageStudentsTab = () => {
-    // Refresh the students list when students are added/deleted
     const handleStudentUpdate = () => {
       if (teacherData?.department) {
         fetchStudents(teacherData.department)
       }
     }
-
     return (
       <div>
         <ManageStudents
@@ -453,9 +452,21 @@ const TeacherDashboard = () => {
               onClick={setActiveTab}
             />
             <TabButton
-              id="take-attendance" // New Tab for Attendance
+              id="take-attendance"
               label="Take Attendance"
               isActive={activeTab === "take-attendance"}
+              onClick={setActiveTab}
+            />
+            <TabButton
+              id="attendance-report"
+              label="Attendance Report"
+              isActive={activeTab === "attendance-report"}
+              onClick={setActiveTab}
+            />
+            <TabButton
+              id="attendance-summary" // New Tab for Attendance Summary
+              label="Attendance Summary"
+              isActive={activeTab === "attendance-summary"}
               onClick={setActiveTab}
             />
             <TabButton
@@ -480,6 +491,20 @@ const TeacherDashboard = () => {
           {activeTab === "manage-students" && <ManageStudentsTab />}
           {activeTab === "take-attendance" && (
             <TakeAttendance
+              teacherId={teacherData?.id}
+              department={teacherData?.department}
+              subjectsTaught={teacherData?.subjectsTaught}
+            />
+          )}
+          {activeTab === "attendance-report" && (
+            <AttendanceReportGenerator
+              teacherId={teacherData?.id}
+              department={teacherData?.department}
+              subjectsTaught={teacherData?.subjectsTaught}
+            />
+          )}
+          {activeTab === "attendance-summary" && ( // Render AttendanceSummary
+            <AttendanceSummary
               teacherId={teacherData?.id}
               department={teacherData?.department}
               subjectsTaught={teacherData?.subjectsTaught}
