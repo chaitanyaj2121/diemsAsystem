@@ -15,6 +15,7 @@ import {
 function ManageStudents({ departmentId }) {
   const [studentName, setStudentName] = useState("")
   const [studentRollNo, setStudentRollNo] = useState("")
+  const [studentEmail, setStudentEmail] = useState("") // New state for student email
   const [selectedYear, setSelectedYear] = useState("") // State for selected year filter/add
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -64,8 +65,20 @@ function ManageStudents({ departmentId }) {
     setError("")
     setAddLoading(true)
 
-    if (!studentName.trim() || !studentRollNo.trim() || !selectedYear.trim()) {
-      setError("All fields (Name, Roll No, Year) are required.")
+    if (
+      !studentName.trim() ||
+      !studentRollNo.trim() ||
+      !studentEmail.trim() ||
+      !selectedYear.trim()
+    ) {
+      setError("All fields (Name, Roll No, Email, Year) are required.")
+      setAddLoading(false)
+      return
+    }
+
+    // Basic email format validation (can be more robust if needed)
+    if (!/\S+@\S+\.\S+/.test(studentEmail.trim())) {
+      setError("Please enter a valid email address for the student.")
       setAddLoading(false)
       return
     }
@@ -74,12 +87,14 @@ function ManageStudents({ departmentId }) {
       await addDoc(collection(db, "students"), {
         name: studentName.trim(),
         rollNo: studentRollNo.trim(),
+        email: studentEmail.trim(), // Store the student's email
         department: departmentId,
         year: selectedYear, // Store the year
         createdAt: new Date(),
       })
       setStudentName("")
       setStudentRollNo("")
+      setStudentEmail("") // Reset email field after submission
       // No need to reset selectedYear, it can remain for adding more students to the same year
       alert("Student added successfully!")
 
@@ -164,6 +179,23 @@ function ManageStudents({ departmentId }) {
           </div>
           <div>
             <label
+              htmlFor="studentEmail"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              Student Email:
+            </label>
+            <input
+              type="email" // Use type="email" for better validation and keyboard on mobile
+              id="studentEmail"
+              value={studentEmail}
+              onChange={(e) => setStudentEmail(e.target.value)}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="student@example.com"
+              required
+            />
+          </div>
+          <div>
+            <label
               htmlFor="studentYear"
               className="block text-gray-700 text-sm font-bold mb-2"
             >
@@ -236,6 +268,8 @@ function ManageStudents({ departmentId }) {
                 <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Student Name</th>
                   <th className="py-3 px-6 text-left">Roll Number</th>
+                  <th className="py-3 px-6 text-left">Email</th>{" "}
+                  {/* New column for email */}
                   <th className="py-3 px-6 text-left">Year</th>
                   <th className="py-3 px-6 text-center">Actions</th>
                 </tr>
@@ -250,6 +284,10 @@ function ManageStudents({ departmentId }) {
                       {student.name}
                     </td>
                     <td className="py-3 px-6 text-left">{student.rollNo}</td>
+                    <td className="py-3 px-6 text-left">
+                      {student.email}
+                    </td>{" "}
+                    {/* Display student's email */}
                     <td className="py-3 px-6 text-left">{student.year}</td>
                     <td className="py-3 px-6 text-center">
                       <button

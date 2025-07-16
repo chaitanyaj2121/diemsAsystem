@@ -14,6 +14,7 @@ import {
 
 function ManageTeachers({ departmentId }) {
   const [teacherName, setTeacherName] = useState("")
+  const [teacherEmail, setTeacherEmail] = useState("") // New state for teacher email
   // subjectsTaught will be an array of objects: [{ subjectName: "", yearTaught: "" }]
   const [subjectsTaught, setSubjectsTaught] = useState([
     { subjectName: "", yearTaught: "" },
@@ -79,8 +80,16 @@ function ManageTeachers({ departmentId }) {
     setError("")
     setAddLoading(true)
 
-    if (!teacherName.trim()) {
-      setError("Teacher name cannot be empty.")
+    // Validate inputs including new teacherEmail
+    if (!teacherName.trim() || !teacherEmail.trim()) {
+      setError("Teacher name and email cannot be empty.")
+      setAddLoading(false)
+      return
+    }
+
+    // Basic email format validation (can be more robust if needed)
+    if (!/\S+@\S+\.\S+/.test(teacherEmail.trim())) {
+      setError("Please enter a valid email address.")
       setAddLoading(false)
       return
     }
@@ -98,11 +107,13 @@ function ManageTeachers({ departmentId }) {
     try {
       await addDoc(collection(db, "teachers"), {
         name: teacherName.trim(),
+        email: teacherEmail.trim(), // Store the teacher's email
         department: departmentId,
         subjectsTaught: subjectsTaught,
         createdAt: new Date(),
       })
       setTeacherName("")
+      setTeacherEmail("") // Reset email field after submission
       setSubjectsTaught([{ subjectName: "", yearTaught: "" }]) // Reset form
       alert("Teacher added successfully!")
       // Re-fetch teachers to update the list
@@ -164,6 +175,24 @@ function ManageTeachers({ departmentId }) {
               value={teacherName}
               onChange={(e) => setTeacherName(e.target.value)}
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="teacherEmail"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              Teacher Email:
+            </label>
+            <input
+              type="email" // Use type="email" for better mobile keyboard and basic validation
+              id="teacherEmail"
+              value={teacherEmail}
+              onChange={(e) => setTeacherEmail(e.target.value)}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              placeholder="example@college.com"
               required
             />
           </div>
@@ -267,6 +296,8 @@ function ManageTeachers({ departmentId }) {
               <thead>
                 <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Teacher Name</th>
+                  <th className="py-3 px-6 text-left">Email</th>{" "}
+                  {/* New column header */}
                   <th className="py-3 px-6 text-left">Subjects Taught</th>
                   <th className="py-3 px-6 text-center">Actions</th>
                 </tr>
@@ -279,6 +310,9 @@ function ManageTeachers({ departmentId }) {
                   >
                     <td className="py-3 px-6 text-left whitespace-nowrap">
                       {teacher.name}
+                    </td>
+                    <td className="py-3 px-6 text-left">
+                      {teacher.email} {/* Display teacher's email */}
                     </td>
                     <td className="py-3 px-6 text-left">
                       {teacher.subjectsTaught &&
