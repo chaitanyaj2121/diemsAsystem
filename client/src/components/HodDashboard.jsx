@@ -1,97 +1,13 @@
+// src/components/HodDashboard.jsx
+
 import React, { useState, useEffect } from "react"
 import { auth, db } from "../firebase/config" // Adjust path as needed
 import { signOut } from "firebase/auth"
 import { doc, getDoc } from "firebase/firestore"
 import { useNavigate } from "react-router-dom"
 
-// Placeholder Components (You will create these fully in subsequent steps)
-const TeachersManagement = ({ departmentId }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm">
-    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-      Manage Teachers
-    </h3>
-    <p className="text-gray-600">
-      Functionality to add, update, and view teachers for {departmentId}{" "}
-      department.
-    </p>
-    {/* Teacher list, Add Teacher form, etc. */}
-  </div>
-)
-
-const StudentsManagement = ({ departmentId }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm">
-    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-      Manage Students
-    </h3>
-    <p className="text-gray-600">
-      Functionality to add, update, and view students for {departmentId}{" "}
-      department.
-    </p>
-    {/* Student list, Add Student form, etc. */}
-  </div>
-)
-
-const SubjectsManagement = ({ departmentId }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm">
-    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-      Manage Subjects
-    </h3>
-    <p className="text-gray-600">
-      Functionality to add, update, and view subjects for {departmentId}{" "}
-      department.
-    </p>
-    {/* Subject list, Add Subject form, etc. */}
-  </div>
-)
-
-const ClassesManagement = ({ departmentId }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm">
-    <h3 className="text-xl font-semibold text-gray-800 mb-2">Manage Classes</h3>
-    <p className="text-gray-600">
-      Functionality to add, update, and view classes for {departmentId}{" "}
-      department.
-    </p>
-    {/* Class list, Add Class form, etc. */}
-  </div>
-)
-
-const AttendanceStats = ({ departmentId }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm">
-    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-      Department Attendance Statistics
-    </h3>
-    <p className="text-gray-600">
-      Overview of attendance for {departmentId} department.
-    </p>
-    {/* Charts, summary data, etc. */}
-  </div>
-)
-
-const DefaulterLists = ({ departmentId }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm">
-    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-      Defaulter Lists
-    </h3>
-    <p className="text-gray-600">
-      View and export lists of students with low attendance for {departmentId}{" "}
-      department.
-    </p>
-    {/* Filters, export options, etc. */}
-  </div>
-)
-
-const AccountManagement = ({ hodData }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm">
-    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-      Account Management
-    </h3>
-    <p className="text-gray-600">
-      Manage your HoD profile, reset passwords for students/teachers, reassign
-      students.
-    </p>
-    {/* Password reset forms, student reassignment tools */}
-  </div>
-)
+// Import the new ManageTeachers component
+import ManageTeachers from "./ManageTeachers" // Adjust path if your components are nested differently
 
 function HodDashboard() {
   const [hodData, setHodData] = useState(null)
@@ -211,8 +127,9 @@ function HodDashboard() {
         </nav>
 
         <main className="flex-1 p-8 overflow-y-auto">
+          {/* Replace the placeholder with the actual component */}
           {activeTab === "teachers" && (
-            <TeachersManagement departmentId={hodData.department} />
+            <ManageTeachers departmentId={hodData.department} />
           )}
           {activeTab === "students" && (
             <StudentsManagement departmentId={hodData.department} />
@@ -235,8 +152,5 @@ function HodDashboard() {
     </div>
   )
 }
-
-// The 'styles' object is no longer needed
-// const styles = { ... };
 
 export default HodDashboard
