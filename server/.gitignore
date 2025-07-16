@@ -1,0 +1,8 @@
+# Node modules (don't upload dependencies)
+node_modules
+
+# Environment variables
+.env
+
+# Firebase admin SDK key
+diemsattendancesystem-firebase-adminsdk-fbsvc-8774144c2c.json
