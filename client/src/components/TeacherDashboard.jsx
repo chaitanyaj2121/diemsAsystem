@@ -13,6 +13,8 @@ import {
   addDoc,
 } from "firebase/firestore"
 import { useNavigate } from "react-router-dom"
+import ManageStudents from "./ManageStudents" // Keep this import
+import TakeAttendance from "./TakeAttendance" // Import the new TakeAttendance component
 
 const TeacherDashboard = () => {
   const [teacherData, setTeacherData] = useState(null)
@@ -200,6 +202,9 @@ const TeacherDashboard = () => {
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Roll Number
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -220,6 +225,9 @@ const TeacherDashboard = () => {
                   <div className="text-sm font-medium text-gray-900">
                     {student.name}
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{student.rollNo}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{student.email}</div>
@@ -257,6 +265,25 @@ const TeacherDashboard = () => {
       </div>
     </div>
   )
+
+  // New ManageStudentsTab component that renders the ManageStudents component
+  const ManageStudentsTab = () => {
+    // Refresh the students list when students are added/deleted
+    const handleStudentUpdate = () => {
+      if (teacherData?.department) {
+        fetchStudents(teacherData.department)
+      }
+    }
+
+    return (
+      <div>
+        <ManageStudents
+          departmentId={teacherData?.department}
+          onStudentUpdate={handleStudentUpdate}
+        />
+      </div>
+    )
+  }
 
   const SubjectsTab = () => (
     <div className="space-y-6">
@@ -415,8 +442,20 @@ const TeacherDashboard = () => {
             />
             <TabButton
               id="students"
-              label="Students"
+              label="View Students"
               isActive={activeTab === "students"}
+              onClick={setActiveTab}
+            />
+            <TabButton
+              id="manage-students"
+              label="Manage Students"
+              isActive={activeTab === "manage-students"}
+              onClick={setActiveTab}
+            />
+            <TabButton
+              id="take-attendance" // New Tab for Attendance
+              label="Take Attendance"
+              isActive={activeTab === "take-attendance"}
               onClick={setActiveTab}
             />
             <TabButton
@@ -438,6 +477,14 @@ const TeacherDashboard = () => {
         <div className="space-y-6">
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "students" && <StudentsTab />}
+          {activeTab === "manage-students" && <ManageStudentsTab />}
+          {activeTab === "take-attendance" && (
+            <TakeAttendance
+              teacherId={teacherData?.id}
+              department={teacherData?.department}
+              subjectsTaught={teacherData?.subjectsTaught}
+            />
+          )}
           {activeTab === "subjects" && <SubjectsTab />}
           {activeTab === "profile" && <ProfileTab />}
         </div>
