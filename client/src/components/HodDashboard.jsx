@@ -6,8 +6,12 @@ import { signOut } from "firebase/auth"
 import { doc, getDoc } from "firebase/firestore"
 import { useNavigate } from "react-router-dom"
 
-// Import the new ManageTeachers component
-import ManageTeachers from "./ManageTeachers" // Adjust path if your components are nested differently
+// Import the necessary components
+import ManageTeachers from "./ManageTeachers"
+import ManageStudents from "./ManageStudents"
+
+// Removed placeholder components for SubjectsManagement, ClassesManagement, and AccountManagement
+// as they are no longer needed.
 
 function HodDashboard() {
   const [hodData, setHodData] = useState(null)
@@ -24,6 +28,14 @@ function HodDashboard() {
           const hodDocSnap = await getDoc(hodDocRef)
           if (hodDocSnap.exists() && hodDocSnap.data().role === "HoD") {
             setHodData({ uid: user.uid, ...hodDocSnap.data() })
+            // If the active tab was one of the removed ones, default to 'teachers'
+            if (
+              !["teachers", "students", "attendance", "defaulters"].includes(
+                activeTab
+              )
+            ) {
+              setActiveTab("teachers")
+            }
           } else {
             setError("Unauthorized access. Please log in as an HoD.")
             await signOut(auth)
@@ -43,7 +55,7 @@ function HodDashboard() {
     })
 
     return () => unsubscribe() // Cleanup subscription
-  }, [navigate])
+  }, [navigate, activeTab]) // Added activeTab to dependency array to handle re-render if it changes
 
   const handleLogout = async () => {
     try {
@@ -104,11 +116,11 @@ function HodDashboard() {
             {[
               { id: "teachers", label: "Manage Teachers" },
               { id: "students", label: "Manage Students" },
-              { id: "subjects", label: "Manage Subjects" },
-              { id: "classes", label: "Manage Classes" },
+              // Removed "Manage Subjects"
+              // Removed "Manage Classes"
               { id: "attendance", label: "Attendance Statistics" },
               { id: "defaulters", label: "Defaulter Lists" },
-              { id: "account", label: "Account Management" },
+              // Removed "Account Management"
             ].map((item) => (
               <li
                 key={item.id}
@@ -127,26 +139,34 @@ function HodDashboard() {
         </nav>
 
         <main className="flex-1 p-8 overflow-y-auto">
-          {/* Replace the placeholder with the actual component */}
           {activeTab === "teachers" && (
             <ManageTeachers departmentId={hodData.department} />
           )}
           {activeTab === "students" && (
-            <StudentsManagement departmentId={hodData.department} />
+            <ManageStudents departmentId={hodData.department} />
           )}
-          {activeTab === "subjects" && (
-            <SubjectsManagement departmentId={hodData.department} />
-          )}
-          {activeTab === "classes" && (
-            <ClassesManagement departmentId={hodData.department} />
-          )}
+          {/* Removed conditional rendering for SubjectsManagement */}
+          {/* Removed conditional rendering for ClassesManagement */}
           {activeTab === "attendance" && (
             <AttendanceStats departmentId={hodData.department} />
           )}
           {activeTab === "defaulters" && (
             <DefaulterLists departmentId={hodData.department} />
           )}
-          {activeTab === "account" && <AccountManagement hodData={hodData} />}
+          {/* Removed conditional rendering for AccountManagement */}
+          {/* Placeholder for future components if needed for attendance/defaulters */}
+          {(activeTab === "attendance" || activeTab === "defaulters") && (
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                {activeTab === "attendance"
+                  ? "Attendance Statistics"
+                  : "Defaulter Lists"}
+              </h3>
+              <p className="text-gray-600">
+                Functionality for this section is not yet implemented.
+              </p>
+            </div>
+          )}
         </main>
       </div>
     </div>
