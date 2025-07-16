@@ -10,6 +10,9 @@ import TeacherLogin from "./components/TeacherLogin"
 import TeacherSignup from "./components/TeacherSignup"
 import TeacherDashboard from "./components/TeacherDashboard"
 import AddSpecificStudents from "./components/AddSpecificStudents"
+import StudentLogin from "./components/StudentLogin"
+import StudentSignup from "./components/StudentSignup"
+import StudentDashboard from "./components/StudentDashboard"
 function App() {
   return (
     <Router>
@@ -30,6 +33,9 @@ function App() {
           path="/add-specific-students"
           element={<AddSpecificStudents />}
         />
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/student-login" element={<StudentLogin />} />
+        <Route path="/student-signup" element={<StudentSignup />} />
         {/* Create a simple Home component if you don't have one */}
       </Routes>
     </Router>
