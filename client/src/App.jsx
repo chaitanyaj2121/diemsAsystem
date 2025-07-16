@@ -9,6 +9,7 @@ import HodDashboard from "./components/HodDashboard"
 import TeacherLogin from "./components/TeacherLogin"
 import TeacherSignup from "./components/TeacherSignup"
 import TeacherDashboard from "./components/TeacherDashboard"
+import AddSpecificStudents from "./components/AddSpecificStudents"
 function App() {
   return (
     <Router>
@@ -25,6 +26,10 @@ function App() {
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         {/* Default or Home Route */}
         <Route path="/" element={<Home />} />{" "}
+        <Route
+          path="/add-specific-students"
+          element={<AddSpecificStudents />}
+        />
         {/* Create a simple Home component if you don't have one */}
       </Routes>
     </Router>
