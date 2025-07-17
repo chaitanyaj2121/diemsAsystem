@@ -9,9 +9,7 @@ import { useNavigate } from "react-router-dom"
 // Import the necessary components
 import ManageTeachers from "./ManageTeachers"
 import ManageStudents from "./ManageStudents"
-
-// Removed placeholder components for SubjectsManagement, ClassesManagement, and AccountManagement
-// as they are no longer needed.
+import AttendanceSummary from "./AttendanceSummary"
 
 function HodDashboard() {
   const [hodData, setHodData] = useState(null)
@@ -63,7 +61,9 @@ function HodDashboard() {
       navigate("/hod-login")
     } catch (err) {
       console.error("Error logging out:", err)
-      alert("Failed to log out.")
+      // Using a custom message box instead of alert()
+      // You would replace this with your actual modal/message box component
+      console.log("Failed to log out.")
     }
   }
 
@@ -116,11 +116,7 @@ function HodDashboard() {
             {[
               { id: "teachers", label: "Manage Teachers" },
               { id: "students", label: "Manage Students" },
-              // Removed "Manage Subjects"
-              // Removed "Manage Classes"
               { id: "attendance", label: "Attendance Statistics" },
-              { id: "defaulters", label: "Defaulter Lists" },
-              // Removed "Account Management"
             ].map((item) => (
               <li
                 key={item.id}
@@ -145,28 +141,51 @@ function HodDashboard() {
           {activeTab === "students" && (
             <ManageStudents departmentId={hodData.department} />
           )}
-          {/* Removed conditional rendering for SubjectsManagement */}
-          {/* Removed conditional rendering for ClassesManagement */}
-          {activeTab === "attendance" && (
-            <AttendanceStats departmentId={hodData.department} />
-          )}
-          {activeTab === "defaulters" && (
-            <DefaulterLists departmentId={hodData.department} />
-          )}
-          {/* Removed conditional rendering for AccountManagement */}
-          {/* Placeholder for future components if needed for attendance/defaulters */}
-          {(activeTab === "attendance" || activeTab === "defaulters") && (
+          {activeTab === "attendance" && hodData && hodData.department ? (
+            <AttendanceSummary
+              // Assuming AttendanceSummary also needs these props
+              teacherId={hodData.uid} // Pass HOD's UID if needed by AttendanceSummary
+              department={hodData.department}
+              year={hodData.year} // Pass year if hodData has it, otherwise remove
+              subjectsTaught={hodData.subjectsTaught || []} // Pass subjectsTaught if hodData has it, otherwise empty array
+            />
+          ) : activeTab === "attendance" ? (
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                {activeTab === "attendance"
-                  ? "Attendance Statistics"
-                  : "Defaulter Lists"}
+                Attendance Statistics
               </h3>
-              <p className="text-gray-600">
-                Functionality for this section is not yet implemented.
+              <p className="text-red-600">
+                Department data is missing. Cannot load summary.
+              </p>
+              <p className="text-gray-600 mt-2">
+                Debug info: {JSON.stringify(hodData, null, 2)}
               </p>
             </div>
-          )}
+          ) : null}
+
+          {/* Render DefaulterList when activeTab is "defaulters" */}
+          {activeTab === "defaulters" && hodData && hodData.department ? (
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <DefaulterList
+                teacherId={hodData.uid} // Pass HOD's UID as teacherId
+                department={hodData.department}
+                year={hodData.year} // Pass year if hodData has it, otherwise remove
+                subjectsTaught={hodData.subjectsTaught || []} // Pass subjectsTaught if hodData has it, otherwise empty array
+              />
+            </div>
+          ) : activeTab === "defaulters" ? (
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                Defaulter List
+              </h3>
+              <p className="text-red-600">
+                Department data is missing. Cannot load defaulter list.
+              </p>
+              <p className="text-gray-600 mt-2">
+                Debug info: {JSON.stringify(hodData, null, 2)}
+              </p>
+            </div>
+          ) : null}
         </main>
       </div>
     </div>
