@@ -1,6 +1,0 @@
-1. once remaining the batch wise attendence 
-like for the practicals attendence its only limited to the specific students
-
-2. also give the teachers option to take the batch wise attendence 
-
-and while craeting the defaulter list it shows the different defaulter list like the total sessions/letures or practicals should not be the same for every students it can be only similer to the only that batch students
