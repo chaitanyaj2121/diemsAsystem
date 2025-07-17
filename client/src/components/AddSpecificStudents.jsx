@@ -84,8 +84,16 @@ const AddSpecificStudents = () => {
     setLoading(true)
     setStatus("Adding students...")
     setAddedCount(0)
+    const studentsPerBatch = 15 // Define how many students per batch
+
     try {
-      for (const student of studentData) {
+      for (let i = 0; i < studentData.length; i++) {
+        const student = studentData[i]
+
+        // Calculate batch number
+        const batchNumber = Math.floor(i / studentsPerBatch) + 1
+        const batchName = `B${batchNumber}` // Simplified batch name
+
         // Generate a simple email based on roll number and name
         const email = `${student.name.toLowerCase().replace(/\s/g, ".")}.${
           student.rollNo
@@ -97,11 +105,14 @@ const AddSpecificStudents = () => {
           email: email,
           department: "Computer Science",
           year: "3rd Year",
+          batch: batchName, // Add the simplified batch field here
           createdAt: Timestamp.fromDate(new Date()), // Current timestamp
           userId: null, // Will be set during student signup/login if they create an account
         }
         await addDoc(collection(db, "students"), studentDoc)
-        console.log(`Added student: ${student.name} (${student.rollNo})`)
+        console.log(
+          `Added student: ${student.name} (${student.rollNo}) to ${batchName}`
+        )
         setAddedCount((prev) => prev + 1)
       }
       setStatus(`Successfully added ${studentData.length} students!`)
@@ -120,7 +131,8 @@ const AddSpecificStudents = () => {
       </h2>
       <p className="text-gray-600 mb-4">
         Click the button below to add the provided list of students to the
-        "Computer Science" department, "3rd Year".
+        "Computer Science" department, "3rd Year", with **simplified batch
+        assignments (e.g., B1, B2)**.
       </p>
       <button
         onClick={addStudentsToFirestore}
