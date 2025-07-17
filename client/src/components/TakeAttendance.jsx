@@ -274,8 +274,8 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
             : "(1 session recorded)"
         }`
       )
-      console.log("[DEBUG] Attendance record submitted:", attendanceRecord)
-
+      // console.log("[DEBUG] Attendance record submitted:", attendanceRecord)
+      alert("Attendence submitted successfully!")
       // Reset form after successful submission
       setTimeout(() => {
         setSelectedSubject("")
@@ -285,7 +285,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         setStudentsForAttendance([])
         setAttendance({})
         setMessage("") // Clear message after reset
-      }, 3000)
+      }, 100)
     } catch (err) {
       console.error("Error submitting attendance:", err)
       setError("Failed to submit attendance. Please try again.")
