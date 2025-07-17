@@ -33,17 +33,43 @@ const StudentDashboard = () => {
           let totalAttendedSessions = 0
           let totalPossibleSessions = 0
 
+          // Use a map to track total conducted sessions per unique (subject, sessionType, batch)
+          const conductedSessionsMap = new Map() // Key: `subject-sessionType-batch`, Value: totalSessions
+
           attendanceSnapshot.docs.forEach((doc) => {
             const record = doc.data()
-            totalPossibleSessions++
+            const sessionsCount =
+              record.sessionsCount ||
+              (record.sessionType === "practical" ? 2 : 1) // Default to 2 for practicals, 1 for lectures
+            const recordBatch = record.batch || "N/A" // Use "N/A" for lecture records that don't have a batch field
+
+            // Construct a unique key for grouping sessions for the *total possible* calculation
+            const key = `${record.subjectName}-${record.sessionType}-${recordBatch}`
+            conductedSessionsMap.set(
+              key,
+              (conductedSessionsMap.get(key) || 0) + sessionsCount
+            )
+
+            // Check if the current student was present in this record
+            const isStudentPresent = record.attendanceData.some(
+              (item) => item.studentId === parsedData.id && item.isPresent
+            )
+
+            // Check if this session counts towards *this specific student's* total possible and attended sessions
+            // Lectures count for all students in the department/year
+            // Practicals only count for students in the specific batch for which the practical was conducted
+            const studentActualBatch = parsedData.batch || "N/A" // Get student's actual batch
 
             if (
-              record.attendanceData &&
-              record.attendanceData.some(
-                (item) => item.studentId === parsedData.id && item.isPresent
-              )
+              record.sessionType === "lecture" ||
+              recordBatch === studentActualBatch
             ) {
-              totalAttendedSessions++
+              // This session counts towards the student's total possible sessions
+              totalPossibleSessions += sessionsCount
+
+              if (isStudentPresent) {
+                totalAttendedSessions += sessionsCount
+              }
             }
           })
 
