@@ -67,7 +67,8 @@ const TeacherDashboard = () => {
     try {
       await signOut(auth)
       localStorage.removeItem("teacherData")
-      navigate("/teacher-login")
+      alert("Logout Success!!")
+      navigate("/")
     } catch (err) {
       console.error("Logout error:", err)
       setError("Failed to log out.")

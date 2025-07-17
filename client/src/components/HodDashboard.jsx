@@ -58,7 +58,8 @@ function HodDashboard() {
   const handleLogout = async () => {
     try {
       await signOut(auth)
-      navigate("/hod-login")
+      alert("Logout Success!!")
+      navigate("/")
     } catch (err) {
       console.error("Error logging out:", err)
       // Using a custom message box instead of alert()
