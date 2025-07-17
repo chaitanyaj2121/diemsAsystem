@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom"
 import ManageTeachers from "./ManageTeachers"
 import ManageStudents from "./ManageStudents"
 import AttendanceSummary from "./AttendanceSummary"
+import FullSummary from "./FullSummary" // Import the FullSummary component
 // Assuming DefaulterList is another component you might have
 // import DefaulterList from "./DefaulterList"; // Uncomment if you have this component
 
@@ -29,11 +30,16 @@ function HodDashboard() {
           const hodDocSnap = await getDoc(hodDocRef)
           if (hodDocSnap.exists() && hodDocSnap.data().role === "HoD") {
             setHodData({ uid: user.uid, ...hodDocSnap.data() })
-            // If the active tab was one of the removed ones, default to 'teachers'
+            // If the active tab was one of the removed ones or not "fullSummary",
+            // default to 'teachers' or maintain current if valid.
             if (
-              !["teachers", "students", "attendance", "defaulters"].includes(
-                activeTab
-              )
+              ![
+                "teachers",
+                "students",
+                "attendance",
+                "defaulters",
+                "fullSummary", // Add "fullSummary" to valid tabs
+              ].includes(activeTab)
             ) {
               setActiveTab("teachers")
             }
@@ -156,6 +162,7 @@ function HodDashboard() {
               { id: "teachers", label: "Manage Teachers" },
               { id: "students", label: "Manage Students" },
               { id: "attendance", label: "Attendance Statistics" },
+              { id: "fullSummary", label: "Full Attendance Summary" }, // New tab for FullSummary
               // { id: "defaulters", label: "Defaulter List" }, // Uncomment if DefaulterList is active
             ].map((item) => (
               <li
@@ -199,6 +206,28 @@ function HodDashboard() {
               </h3>
               <p className="text-red-600">
                 Department data is missing. Cannot load summary.
+              </p>
+              <p className="text-gray-600 mt-2">
+                Debug info: {JSON.stringify(hodData, null, 2)}
+              </p>
+            </div>
+          ) : null}
+
+          {/* Render FullSummary when activeTab is "fullSummary" */}
+          {activeTab === "fullSummary" && hodData && hodData.department ? (
+            <FullSummary
+              teacherId={hodData.uid} // Pass HOD's UID, though FullSummary might not strictly need it
+              department={hodData.department}
+              year={hodData.year} // Pass year if hodData has it
+              subjectsTaught={hodData.subjectsTaught || []} // Pass all subjects taught in the department
+            />
+          ) : activeTab === "fullSummary" ? (
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                Full Attendance Summary
+              </h3>
+              <p className="text-red-600">
+                Department data is missing. Cannot load full summary.
               </p>
               <p className="text-gray-600 mt-2">
                 Debug info: {JSON.stringify(hodData, null, 2)}
