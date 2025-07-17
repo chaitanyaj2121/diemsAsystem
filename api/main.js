@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     res.json({
-      message: "Driver App API Server",
+      message: "API Server",
       status: "healthy",
       timestamp: new Date().toISOString(),
     })
