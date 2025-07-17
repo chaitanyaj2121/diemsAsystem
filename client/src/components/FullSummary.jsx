@@ -11,7 +11,7 @@ import {
 import { db } from "../firebase/config"
 import { collection, query, where, getDocs } from "firebase/firestore"
 
-const FullSummary = ({
+const FullSubjectPracticalSummary = ({
   teacherId,
   year,
   department,
@@ -264,6 +264,73 @@ const FullSummary = ({
 
   const filteredStudents = getFilteredStudents()
 
+  // Function to export data to CSV
+  const exportToCSV = () => {
+    if (filteredStudents.length === 0) {
+      alert("No data to export.")
+      return
+    }
+
+    const headers = [
+      "Roll No.",
+      "Name of Student",
+      "Batch",
+      ...attendanceStats.subjects.flatMap((subject) => [
+        `${subject} (L Attended)`,
+        `${subject} (L Total)`,
+        `${subject} (P Attended)`,
+        `${subject} (P Total)`,
+      ]),
+      "Overall Attended Sessions",
+      "Overall Total Sessions",
+      "Overall Attendance %",
+    ]
+
+    const rows = filteredStudents.map((student) => {
+      const studentStats = attendanceStats.stats[student.id]
+      const rowData = [student.rollNo, student.name, student.batch || "N/A"]
+
+      attendanceStats.subjects.forEach((subject) => {
+        const subjectStats = studentStats.subjectWise[subject]
+        if (subjectStats) {
+          rowData.push(subjectStats.lecture.attended)
+          rowData.push(subjectStats.lecture.total)
+          rowData.push(subjectStats.practical.attended)
+          rowData.push(subjectStats.practical.total)
+        } else {
+          rowData.push("", "", "", "") // Empty for subjects not applicable
+        }
+      })
+
+      rowData.push(studentStats.attendedSessions)
+      rowData.push(studentStats.totalSessions)
+      rowData.push(
+        getAttendancePercentage(
+          studentStats.attendedSessions,
+          studentStats.totalSessions
+        )
+      )
+      return rowData
+    })
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob)
+      link.setAttribute("href", url)
+      link.setAttribute("download", "attendance_summary.csv")
+      link.style.visibility = "hidden"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -294,9 +361,12 @@ const FullSummary = ({
               </h1>
             </div>
             <div className="flex items-center space-x-2">
-              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <button
+                onClick={exportToCSV}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <Download className="h-4 w-4" />
-                <span>Export Report</span>
+                <span>Export to CSV</span>
               </button>
             </div>
           </div>
@@ -600,4 +670,4 @@ const FullSummary = ({
   )
 }
 
-export default FullSummary
+export default FullSubjectPracticalSummary
