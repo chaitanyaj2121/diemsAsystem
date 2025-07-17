@@ -14,17 +14,28 @@ import {
 
 function ManageTeachers({ departmentId }) {
   const [teacherName, setTeacherName] = useState("")
-  const [teacherEmail, setTeacherEmail] = useState("") // New state for teacher email
-  // subjectsTaught will be an array of objects: [{ subjectName: "", yearTaught: "" }]
+  const [teacherEmail, setTeacherEmail] = useState("")
+  // subjectsTaught will be an array of objects: [{ subjectName: "", yearTaught: "", hasPractical: false, practicalBatches: [] }]
   const [subjectsTaught, setSubjectsTaught] = useState([
-    { subjectName: "", yearTaught: "" },
+    {
+      subjectName: "",
+      yearTaught: "",
+      hasPractical: false,
+      practicalBatches: [],
+    },
   ])
   const [teachers, setTeachers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [addLoading, setAddLoading] = useState(false)
 
-  const yearsOptions = ["1st Year", "2nd Year", "3rd Year", "Final Year"] // Define possible years
+  const yearsOptions = ["1st Year", "2nd Year", "3rd Year", "Final Year"]
+
+  // Generate batch options (assuming batches A, B, C, D, E for each year)
+  const generateBatchOptions = (year) => {
+    const batchLetters = ["B1", "B2", "B3", "B4", "B5"]
+    return batchLetters.map((letter) => `${year} - Batch ${letter}`)
+  }
 
   // Fetch teachers when component mounts or departmentId changes
   useEffect(() => {
@@ -57,14 +68,55 @@ function ManageTeachers({ departmentId }) {
 
   // Handle adding new subject/year pair
   const handleAddSubject = () => {
-    setSubjectsTaught([...subjectsTaught, { subjectName: "", yearTaught: "" }])
+    setSubjectsTaught([
+      ...subjectsTaught,
+      {
+        subjectName: "",
+        yearTaught: "",
+        hasPractical: false,
+        practicalBatches: [],
+      },
+    ])
   }
 
   // Handle changes to a specific subject/year pair
   const handleSubjectChange = (index, field, value) => {
-    const updatedSubjects = subjectsTaught.map((subject, i) =>
-      i === index ? { ...subject, [field]: value } : subject
-    )
+    const updatedSubjects = subjectsTaught.map((subject, i) => {
+      if (i === index) {
+        const updatedSubject = { ...subject, [field]: value }
+        // If hasPractical is set to false, clear practicalBatches
+        if (field === "hasPractical" && !value) {
+          updatedSubject.practicalBatches = []
+        }
+        // If year changes, clear practical batches to avoid confusion
+        if (field === "yearTaught") {
+          updatedSubject.practicalBatches = []
+        }
+        return updatedSubject
+      }
+      return subject
+    })
+    setSubjectsTaught(updatedSubjects)
+  }
+
+  // Handle practical batch selection
+  const handlePracticalBatchChange = (subjectIndex, batchValue, isChecked) => {
+    const updatedSubjects = subjectsTaught.map((subject, i) => {
+      if (i === subjectIndex) {
+        let updatedBatches = [...subject.practicalBatches]
+        if (isChecked) {
+          if (!updatedBatches.includes(batchValue)) {
+            updatedBatches.push(batchValue)
+          }
+        } else {
+          updatedBatches = updatedBatches.filter(
+            (batch) => batch !== batchValue
+          )
+        }
+        return { ...subject, practicalBatches: updatedBatches }
+      }
+      return subject
+    })
     setSubjectsTaught(updatedSubjects)
   }
 
@@ -87,7 +139,7 @@ function ManageTeachers({ departmentId }) {
       return
     }
 
-    // Basic email format validation (can be more robust if needed)
+    // Basic email format validation
     if (!/\S+@\S+\.\S+/.test(teacherEmail.trim())) {
       setError("Please enter a valid email address.")
       setAddLoading(false)
@@ -104,17 +156,34 @@ function ManageTeachers({ departmentId }) {
       return
     }
 
+    // Validate practical batches (if practical is enabled, at least one batch should be selected)
+    const hasInvalidPractical = subjectsTaught.some(
+      (s) => s.hasPractical && s.practicalBatches.length === 0
+    )
+    if (hasInvalidPractical) {
+      setError("Please select at least one batch for subjects with practicals.")
+      setAddLoading(false)
+      return
+    }
+
     try {
       await addDoc(collection(db, "teachers"), {
         name: teacherName.trim(),
-        email: teacherEmail.trim(), // Store the teacher's email
+        email: teacherEmail.trim(),
         department: departmentId,
         subjectsTaught: subjectsTaught,
         createdAt: new Date(),
       })
       setTeacherName("")
-      setTeacherEmail("") // Reset email field after submission
-      setSubjectsTaught([{ subjectName: "", yearTaught: "" }]) // Reset form
+      setTeacherEmail("")
+      setSubjectsTaught([
+        {
+          subjectName: "",
+          yearTaught: "",
+          hasPractical: false,
+          practicalBatches: [],
+        },
+      ])
       alert("Teacher added successfully!")
       // Re-fetch teachers to update the list
       const q = query(
@@ -141,7 +210,7 @@ function ManageTeachers({ departmentId }) {
       try {
         await deleteDoc(doc(db, "teachers", teacherId))
         alert("Teacher deleted successfully!")
-        setTeachers(teachers.filter((teacher) => teacher.id !== teacherId)) // Update UI
+        setTeachers(teachers.filter((teacher) => teacher.id !== teacherId))
       } catch (err) {
         console.error("Error deleting teacher:", err)
         setError("Failed to delete teacher.")
@@ -187,7 +256,7 @@ function ManageTeachers({ departmentId }) {
               Teacher Email:
             </label>
             <input
-              type="email" // Use type="email" for better mobile keyboard and basic validation
+              type="email"
               id="teacherEmail"
               value={teacherEmail}
               onChange={(e) => setTeacherEmail(e.target.value)}
@@ -204,60 +273,130 @@ function ManageTeachers({ departmentId }) {
             {subjectsTaught.map((subject, index) => (
               <div
                 key={index}
-                className="flex flex-wrap items-end gap-3 bg-gray-50 p-3 rounded-md"
+                className="bg-gray-50 p-4 rounded-md border border-gray-200"
               >
-                <div className="flex-1 min-w-[150px]">
-                  <label
-                    htmlFor={`subjectName-${index}`}
-                    className="block text-gray-600 text-xs font-bold mb-1"
-                  >
-                    Subject Name:
-                  </label>
-                  <input
-                    type="text"
-                    id={`subjectName-${index}`}
-                    value={subject.subjectName}
-                    onChange={(e) =>
-                      handleSubjectChange(index, "subjectName", e.target.value)
-                    }
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                    placeholder="e.g., Data Structures"
-                    required
-                  />
+                <div className="flex flex-wrap items-end gap-3 mb-3">
+                  <div className="flex-1 min-w-[150px]">
+                    <label
+                      htmlFor={`subjectName-${index}`}
+                      className="block text-gray-600 text-xs font-bold mb-1"
+                    >
+                      Subject Name:
+                    </label>
+                    <input
+                      type="text"
+                      id={`subjectName-${index}`}
+                      value={subject.subjectName}
+                      onChange={(e) =>
+                        handleSubjectChange(
+                          index,
+                          "subjectName",
+                          e.target.value
+                        )
+                      }
+                      className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                      placeholder="e.g., Data Structures"
+                      required
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[120px]">
+                    <label
+                      htmlFor={`yearTaught-${index}`}
+                      className="block text-gray-600 text-xs font-bold mb-1"
+                    >
+                      Year Taught:
+                    </label>
+                    <select
+                      id={`yearTaught-${index}`}
+                      value={subject.yearTaught}
+                      onChange={(e) =>
+                        handleSubjectChange(index, "yearTaught", e.target.value)
+                      }
+                      className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                      required
+                    >
+                      <option value="">Select Year</option>
+                      {yearsOptions.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {subjectsTaught.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSubject(index)}
+                      className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded text-sm transition-colors duration-200"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
-                <div className="flex-1 min-w-[120px]">
-                  <label
-                    htmlFor={`yearTaught-${index}`}
-                    className="block text-gray-600 text-xs font-bold mb-1"
-                  >
-                    Year Taught:
-                  </label>
-                  <select
-                    id={`yearTaught-${index}`}
-                    value={subject.yearTaught}
-                    onChange={(e) =>
-                      handleSubjectChange(index, "yearTaught", e.target.value)
-                    }
-                    className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
-                    required
-                  >
-                    <option value="">Select Year</option>
-                    {yearsOptions.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
+
+                {/* Practical Section */}
+                <div className="mt-4">
+                  <div className="flex items-center mb-3">
+                    <input
+                      type="checkbox"
+                      id={`hasPractical-${index}`}
+                      checked={subject.hasPractical}
+                      onChange={(e) =>
+                        handleSubjectChange(
+                          index,
+                          "hasPractical",
+                          e.target.checked
+                        )
+                      }
+                      className="mr-2"
+                    />
+                    <label
+                      htmlFor={`hasPractical-${index}`}
+                      className="text-gray-600 text-sm font-bold"
+                    >
+                      This subject has practical sessions
+                    </label>
+                  </div>
+
+                  {subject.hasPractical && subject.yearTaught && (
+                    <div className="ml-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                      <p className="text-gray-600 text-sm font-bold mb-2">
+                        Select Practical Batches for {subject.yearTaught}:
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                        {generateBatchOptions(subject.yearTaught).map(
+                          (batch) => (
+                            <label
+                              key={batch}
+                              className="flex items-center text-sm cursor-pointer hover:bg-blue-100 p-2 rounded"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={subject.practicalBatches.includes(
+                                  batch
+                                )}
+                                onChange={(e) =>
+                                  handlePracticalBatchChange(
+                                    index,
+                                    batch,
+                                    e.target.checked
+                                  )
+                                }
+                                className="mr-2"
+                              />
+                              <span className="text-gray-700">{batch}</span>
+                            </label>
+                          )
+                        )}
+                      </div>
+                      {subject.practicalBatches.length > 0 && (
+                        <p className="text-xs text-blue-600 mt-2">
+                          Selected: {subject.practicalBatches.join(", ")}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {subjectsTaught.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSubject(index)}
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded text-sm transition-colors duration-200"
-                  >
-                    Remove
-                  </button>
-                )}
               </div>
             ))}
             <button
@@ -296,9 +435,8 @@ function ManageTeachers({ departmentId }) {
               <thead>
                 <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Teacher Name</th>
-                  <th className="py-3 px-6 text-left">Email</th>{" "}
-                  {/* New column header */}
-                  <th className="py-3 px-6 text-left">Subjects Taught</th>
+                  <th className="py-3 px-6 text-left">Email</th>
+                  <th className="py-3 px-6 text-left">Subjects & Practicals</th>
                   <th className="py-3 px-6 text-center">Actions</th>
                 </tr>
               </thead>
@@ -311,19 +449,43 @@ function ManageTeachers({ departmentId }) {
                     <td className="py-3 px-6 text-left whitespace-nowrap">
                       {teacher.name}
                     </td>
-                    <td className="py-3 px-6 text-left">
-                      {teacher.email} {/* Display teacher's email */}
-                    </td>
+                    <td className="py-3 px-6 text-left">{teacher.email}</td>
                     <td className="py-3 px-6 text-left">
                       {teacher.subjectsTaught &&
                       teacher.subjectsTaught.length > 0 ? (
-                        <ul className="list-disc list-inside">
+                        <div className="space-y-2">
                           {teacher.subjectsTaught.map((s, idx) => (
-                            <li key={idx}>
-                              {s.subjectName} ({s.yearTaught})
-                            </li>
+                            <div
+                              key={idx}
+                              className="border-l-4 border-blue-400 pl-3"
+                            >
+                              <div className="font-medium">
+                                {s.subjectName} ({s.yearTaught})
+                              </div>
+                              {s.hasPractical &&
+                                s.practicalBatches &&
+                                s.practicalBatches.length > 0 && (
+                                  <div className="text-xs text-green-600 mt-1">
+                                    <span className="font-medium">
+                                      Practical Batches:
+                                    </span>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {s.practicalBatches.map(
+                                        (batch, batchIdx) => (
+                                          <span
+                                            key={batchIdx}
+                                            className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs"
+                                          >
+                                            {batch}
+                                          </span>
+                                        )
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       ) : (
                         "N/A"
                       )}
