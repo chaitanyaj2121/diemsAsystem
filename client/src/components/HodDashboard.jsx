@@ -10,12 +10,15 @@ import { useNavigate } from "react-router-dom"
 import ManageTeachers from "./ManageTeachers"
 import ManageStudents from "./ManageStudents"
 import AttendanceSummary from "./AttendanceSummary"
+// Assuming DefaulterList is another component you might have
+// import DefaulterList from "./DefaulterList"; // Uncomment if you have this component
 
 function HodDashboard() {
   const [hodData, setHodData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState("teachers") // Default active tab
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false) // New state for mobile sidebar
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -94,30 +97,66 @@ function HodDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 font-sans">
-      <header className="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
-        <h1 className="text-2xl font-bold">
-          HoD Dashboard - {hodData.department} Department
-        </h1>
-        <div className="flex items-center space-x-4">
-          <span className="text-lg">
+      <header className="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center z-20">
+        <div className="flex items-center">
+          {/* Hamburger menu for mobile */}
+          <button
+            className="md:hidden text-white mr-4 focus:outline-none"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              ></path>
+            </svg>
+          </button>
+          <h1 className="text-xl md:text-2xl font-bold">
+            HoD Dashboard - {hodData.department} Dept.
+          </h1>
+        </div>
+        <div className="flex items-center space-x-2 md:space-x-4">
+          <span className="text-sm md:text-lg hidden md:block">
             Welcome, {hodData.firstName} {hodData.lastName}
           </span>
           <button
             onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm transition-colors duration-200"
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 md:px-4 md:py-2 rounded-md text-xs md:text-sm transition-colors duration-200"
           >
             Logout
           </button>
         </div>
       </header>
 
-      <div className="flex flex-1">
-        <nav className="w-64 bg-gray-800 text-white p-4 shadow-lg">
+      <div className="flex flex-1 relative">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
+
+        {/* Sidebar */}
+        <nav
+          className={`fixed inset-y-0 left-0 w-64 bg-gray-800 text-white p-4 shadow-lg transform ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-20 md:z-auto`}
+        >
           <ul className="list-none p-0 m-0">
             {[
               { id: "teachers", label: "Manage Teachers" },
               { id: "students", label: "Manage Students" },
               { id: "attendance", label: "Attendance Statistics" },
+              // { id: "defaulters", label: "Defaulter List" }, // Uncomment if DefaulterList is active
             ].map((item) => (
               <li
                 key={item.id}
@@ -127,7 +166,10 @@ function HodDashboard() {
                       ? "bg-blue-700 font-bold"
                       : "hover:bg-gray-700"
                   }`}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id)
+                  setIsSidebarOpen(false) // Close sidebar on tab click for mobile
+                }}
               >
                 {item.label}
               </li>
@@ -135,7 +177,8 @@ function HodDashboard() {
           </ul>
         </nav>
 
-        <main className="flex-1 p-8 overflow-y-auto">
+        {/* Main Content Area */}
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           {activeTab === "teachers" && (
             <ManageTeachers departmentId={hodData.department} />
           )}
@@ -144,7 +187,6 @@ function HodDashboard() {
           )}
           {activeTab === "attendance" && hodData && hodData.department ? (
             <AttendanceSummary
-              // Assuming AttendanceSummary also needs these props
               teacherId={hodData.uid} // Pass HOD's UID if needed by AttendanceSummary
               department={hodData.department}
               year={hodData.year} // Pass year if hodData has it, otherwise remove
@@ -165,7 +207,8 @@ function HodDashboard() {
           ) : null}
 
           {/* Render DefaulterList when activeTab is "defaulters" */}
-          {activeTab === "defaulters" && hodData && hodData.department ? (
+          {/* Uncomment if you are using DefaulterList */}
+          {/* {activeTab === "defaulters" && hodData && hodData.department ? (
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <DefaulterList
                 teacherId={hodData.uid} // Pass HOD's UID as teacherId
@@ -186,7 +229,7 @@ function HodDashboard() {
                 Debug info: {JSON.stringify(hodData, null, 2)}
               </p>
             </div>
-          ) : null}
+          ) : null} */}
         </main>
       </div>
     </div>

@@ -24,6 +24,7 @@ const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false) // New state for mobile sidebar
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -77,12 +78,16 @@ const TeacherDashboard = () => {
 
   const TabButton = ({ id, label, isActive, onClick }) => (
     <button
-      onClick={() => onClick(id)}
-      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-        isActive
-          ? "bg-blue-600 text-white"
-          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-      }`}
+      onClick={() => {
+        onClick(id)
+        setIsSidebarOpen(false) // Close sidebar on tab click for mobile
+      }}
+      className={`px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium transition-colors text-sm md:text-base whitespace-nowrap
+        ${
+          isActive
+            ? "bg-blue-600 text-white"
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+        }`}
     >
       {label}
     </button>
@@ -180,6 +185,14 @@ const TeacherDashboard = () => {
                   {subject.subjectName}
                 </h4>
                 <p className="text-sm text-gray-600">{subject.yearTaught}</p>
+                <div className="mt-3 flex space-x-2">
+                  <button className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                    View Details
+                  </button>
+                  <button className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700">
+                    Edit
+                  </button>
+                </div>
               </div>
             ))
           ) : (
@@ -402,38 +415,69 @@ const TeacherDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-gray-100 font-sans">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold text-gray-800">
-                  Teacher Dashboard
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                Welcome, {teacherData?.name}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
+      <header className="bg-white shadow-sm border-b border-gray-200 p-4 flex justify-between items-center z-20">
+        <div className="flex items-center">
+          {/* Hamburger menu for mobile */}
+          <button
+            className="md:hidden text-gray-600 mr-4 focus:outline-none"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              ></path>
+            </svg>
+          </button>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+            Teacher Dashboard
+          </h1>
+        </div>
+        <div className="flex items-center space-x-2 md:space-x-4">
+          <span className="text-sm md:text-base text-gray-600 hidden md:block">
+            Welcome, {teacherData?.name}
+          </span>
+          <button
+            onClick={handleLogout}
+            className="px-3 py-1 md:px-4 md:py-2 text-xs md:text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          >
+            Logout
+          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
-        <div className="mb-8">
-          <div className="flex space-x-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+      {/* Main Content Area */}
+      <div className="flex flex-1 relative">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
+
+        {/* Navigation Tabs (Sidebar on Mobile, Flex on Desktop) */}
+        <nav
+          className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg border-r border-gray-200 p-4
+            transform ${
+              isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } md:relative md:translate-x-0
+            transition-transform duration-300 ease-in-out z-20 md:z-auto
+            md:flex md:flex-col md:w-auto md:min-w-[200px]`} /* Adjust md:min-w as needed */
+        >
+          <div className="flex flex-col space-y-2">
+            {" "}
+            {/* Use flex-col for vertical tabs on mobile */}
             <TabButton
               id="overview"
               label="Overview"
@@ -465,7 +509,7 @@ const TeacherDashboard = () => {
               onClick={setActiveTab}
             />
             <TabButton
-              id="attendance-summary" // New Tab for Attendance Summary
+              id="attendance-summary"
               label="Attendance Summary"
               isActive={activeTab === "attendance-summary"}
               onClick={setActiveTab}
@@ -483,10 +527,10 @@ const TeacherDashboard = () => {
               onClick={setActiveTab}
             />
           </div>
-        </div>
+        </nav>
 
-        {/* Tab Content */}
-        <div className="space-y-6">
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto">
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "students" && <StudentsTab />}
           {activeTab === "manage-students" && <ManageStudentsTab />}
@@ -504,7 +548,7 @@ const TeacherDashboard = () => {
               subjectsTaught={teacherData?.subjectsTaught}
             />
           )}
-          {activeTab === "attendance-summary" && ( // Render AttendanceSummary
+          {activeTab === "attendance-summary" && (
             <AttendanceSummary
               teacherId={teacherData?.id}
               department={teacherData?.department}
@@ -513,7 +557,7 @@ const TeacherDashboard = () => {
           )}
           {activeTab === "subjects" && <SubjectsTab />}
           {activeTab === "profile" && <ProfileTab />}
-        </div>
+        </main>
       </div>
     </div>
   )

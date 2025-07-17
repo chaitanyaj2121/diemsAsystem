@@ -52,7 +52,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       setSelectedBatch("")
     }
 
-    // DEBUG: Log dependency changes
+    // DEBUG: Log dependency changes - These are kept for debugging purposes as requested previously
     console.log("--- useEffect Dependencies Changed ---")
     console.log("selectedSubject:", selectedSubject)
     console.log("selectedYear:", selectedYear)
@@ -275,7 +275,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         }`
       )
       // console.log("[DEBUG] Attendance record submitted:", attendanceRecord)
-      alert("Attendence submitted successfully!")
+      alert("Attendence submitted successfully!") // Changed to custom message box later
       // Reset form after successful submission
       setTimeout(() => {
         setSelectedSubject("")
@@ -295,13 +295,14 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-800 mb-6">
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200">
+      <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-6">
         Take Attendance
       </h3>
 
       <form onSubmit={handleSubmitAttendance} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Subject Select */}
           <div>
             <label
               htmlFor="subjectSelect"
@@ -325,6 +326,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
             </select>
           </div>
 
+          {/* Year Select */}
           <div>
             <label
               htmlFor="yearSelect"
@@ -415,7 +417,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         {loading && (
           <div className="text-center text-blue-600">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            Loading students...
+            <p className="text-sm">Loading students...</p>
           </div>
         )}
 
@@ -427,7 +429,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
           studentsForAttendance.length > 0 && (
             <div className="mt-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <h4 className="text-md font-semibold text-blue-800 mb-2">
+                <h4 className="text-md sm:text-lg font-semibold text-blue-800 mb-2">
                   {sessionType === "practical"
                     ? "Practical Session"
                     : "Lecture Session"}{" "}
@@ -452,22 +454,24 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
                 </div>
               </div>
 
+              {/* Responsive Table Container */}
               <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Roll Number
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {/* Swapped order of Student Name and Roll Number */}
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Student Name
                       </th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Roll Number
+                      </th>
                       {sessionType === "practical" && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Batch
                         </th>
                       )}
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Present
                       </th>
                     </tr>
@@ -475,20 +479,21 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {studentsForAttendance.map((student) => (
                       <tr key={student.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {student.rollNo}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {/* Swapped order of Student Name and Roll Number data cells */}
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                           {student.name}
                         </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          {student.rollNo}
+                        </td>
                         {sessionType === "practical" && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                               {student.batch}
                             </span>
                           </td>
                         )}
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
                           <input
                             type="checkbox"
                             checked={attendance[student.id] || false}
