@@ -15,16 +15,18 @@ import {
 function ManageStudents({ departmentId }) {
   const [studentName, setStudentName] = useState("")
   const [studentRollNo, setStudentRollNo] = useState("")
-  const [studentEmail, setStudentEmail] = useState("") // New state for student email
-  const [selectedYear, setSelectedYear] = useState("") // State for selected year filter/add
+  const [studentEmail, setStudentEmail] = useState("")
+  const [selectedYear, setSelectedYear] = useState("")
+  const [selectedBatch, setSelectedBatch] = useState("") // New state for selected batch
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [addLoading, setAddLoading] = useState(false)
 
   const yearsOptions = ["1st Year", "2nd Year", "3rd Year", "Final Year"]
+  const batchesOptions = ["B1", "B2", "B3", "B4", "B5"] // Options for batches
 
-  // Fetch students when component mounts or departmentId/selectedYear changes
+  // Fetch students when component mounts or departmentId/selectedYear/selectedBatch changes
   useEffect(() => {
     const fetchStudents = async () => {
       setLoading(true)
@@ -35,9 +37,14 @@ function ManageStudents({ departmentId }) {
           where("department", "==", departmentId)
         )
 
-        // If a year is selected, filter by year as well
+        // If a year is selected, filter by year
         if (selectedYear) {
           q = query(q, where("year", "==", selectedYear))
+        }
+
+        // If a batch is selected, filter by batch as well
+        if (selectedBatch) {
+          q = query(q, where("batch", "==", selectedBatch))
         }
 
         const querySnapshot = await getDocs(q)
@@ -57,7 +64,7 @@ function ManageStudents({ departmentId }) {
     if (departmentId) {
       fetchStudents()
     }
-  }, [departmentId, selectedYear]) // Re-fetch when departmentId or selectedYear changes
+  }, [departmentId, selectedYear, selectedBatch]) // Re-fetch when departmentId, selectedYear, or selectedBatch changes
 
   // Handle adding a new student
   const handleAddStudent = async (e) => {
@@ -69,9 +76,10 @@ function ManageStudents({ departmentId }) {
       !studentName.trim() ||
       !studentRollNo.trim() ||
       !studentEmail.trim() ||
-      !selectedYear.trim()
+      !selectedYear.trim() ||
+      !selectedBatch.trim() // Batch is now required
     ) {
-      setError("All fields (Name, Roll No, Email, Year) are required.")
+      setError("All fields (Name, Roll No, Email, Year, Batch) are required.")
       setAddLoading(false)
       return
     }
@@ -87,22 +95,26 @@ function ManageStudents({ departmentId }) {
       await addDoc(collection(db, "students"), {
         name: studentName.trim(),
         rollNo: studentRollNo.trim(),
-        email: studentEmail.trim(), // Store the student's email
+        email: studentEmail.trim(),
         department: departmentId,
-        year: selectedYear, // Store the year
+        year: selectedYear,
+        batch: selectedBatch, // Store the selected batch
         createdAt: new Date(),
+        userId: null, // Assuming userId is initially null as per your example
       })
       setStudentName("")
       setStudentRollNo("")
-      setStudentEmail("") // Reset email field after submission
+      setStudentEmail("")
+      setSelectedBatch("") // Reset batch field after submission
       // No need to reset selectedYear, it can remain for adding more students to the same year
       alert("Student added successfully!")
 
-      // Re-fetch students to update the list
+      // Re-fetch students to update the list, ensuring current filters are maintained
       const q = query(
         collection(db, "students"),
         where("department", "==", departmentId),
-        where("year", "==", selectedYear) // Ensure we only re-fetch for the current year
+        where("year", "==", selectedYear),
+        where("batch", "==", selectedBatch) // Ensure we only re-fetch for the current batch
       )
       const querySnapshot = await getDocs(q)
       const updatedStudentsList = querySnapshot.docs.map((doc) => ({
@@ -185,7 +197,7 @@ function ManageStudents({ departmentId }) {
               Student Email:
             </label>
             <input
-              type="email" // Use type="email" for better validation and keyboard on mobile
+              type="email"
               id="studentEmail"
               value={studentEmail}
               onChange={(e) => setStudentEmail(e.target.value)}
@@ -216,6 +228,29 @@ function ManageStudents({ departmentId }) {
               ))}
             </select>
           </div>
+          {/* New Batch Selection Dropdown for adding students */}
+          <div>
+            <label
+              htmlFor="studentBatch"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              Select Batch:
+            </label>
+            <select
+              id="studentBatch"
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white"
+              required
+            >
+              <option value="">-- Select Batch --</option>
+              {batchesOptions.map((batch) => (
+                <option key={batch} value={batch}>
+                  {batch}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition-colors duration-200"
@@ -232,34 +267,62 @@ function ManageStudents({ departmentId }) {
           All Students ({departmentId})
         </h3>
 
-        {/* Year Filter for Viewing Students */}
-        <div className="mb-4">
-          <label
-            htmlFor="filterYear"
-            className="block text-gray-700 text-sm font-bold mb-2"
-          >
-            Filter by Year:
-          </label>
-          <select
-            id="filterYear"
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white"
-          >
-            <option value="">All Years</option>
-            {yearsOptions.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Year Filter for Viewing Students */}
+          <div>
+            <label
+              htmlFor="filterYear"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              Filter by Year:
+            </label>
+            <select
+              id="filterYear"
+              value={selectedYear}
+              onChange={(e) => {
+                setSelectedYear(e.target.value)
+                setSelectedBatch("") // Reset batch filter when year changes
+              }}
+              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white"
+            >
+              <option value="">All Years</option>
+              {yearsOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* New Batch Filter for Viewing Students */}
+          <div>
+            <label
+              htmlFor="filterBatch"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
+              Filter by Batch:
+            </label>
+            <select
+              id="filterBatch"
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-white"
+            >
+              <option value="">All Batches</option>
+              {batchesOptions.map((batch) => (
+                <option key={batch} value={batch}>
+                  {batch}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {loading ? (
           <p className="text-blue-600">Loading students...</p>
         ) : students.length === 0 ? (
           <p className="text-gray-600">
-            No students found for this department and selected year.
+            No students found for this department and selected criteria.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -268,9 +331,10 @@ function ManageStudents({ departmentId }) {
                 <tr className="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                   <th className="py-3 px-6 text-left">Student Name</th>
                   <th className="py-3 px-6 text-left">Roll Number</th>
-                  <th className="py-3 px-6 text-left">Email</th>{" "}
-                  {/* New column for email */}
+                  <th className="py-3 px-6 text-left">Email</th>
                   <th className="py-3 px-6 text-left">Year</th>
+                  <th className="py-3 px-6 text-left">Batch</th>{" "}
+                  {/* New column header for batch */}
                   <th className="py-3 px-6 text-center">Actions</th>
                 </tr>
               </thead>
@@ -284,11 +348,12 @@ function ManageStudents({ departmentId }) {
                       {student.name}
                     </td>
                     <td className="py-3 px-6 text-left">{student.rollNo}</td>
-                    <td className="py-3 px-6 text-left">
-                      {student.email}
-                    </td>{" "}
-                    {/* Display student's email */}
+                    <td className="py-3 px-6 text-left">{student.email}</td>
                     <td className="py-3 px-6 text-left">{student.year}</td>
+                    <td className="py-3 px-6 text-left">
+                      {student.batch}
+                    </td>{" "}
+                    {/* Display student's batch */}
                     <td className="py-3 px-6 text-center">
                       <button
                         onClick={() => handleDeleteStudent(student.id)}
