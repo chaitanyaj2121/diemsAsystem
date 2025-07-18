@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react"
+
 import {
   User,
   Calendar,
@@ -30,11 +31,61 @@ const FullSubjectPracticalSummary = ({
   const [message, setMessage] = useState("")
 
   const availableSubjects = subjectsTaught || []
-  const availableYears = [
-    ...new Set(availableSubjects.map((subject) => subject.yearTaught)),
-  ].sort()
 
-  const yearOptions = ["All Years", ...availableYears.filter((y) => y !== "")]
+  // Get years from students data instead of subjectsTaught for HODs
+  const getAvailableYears = () => {
+    if (userRole === "hod") {
+      // For HOD, get years from all students in the department
+      const yearsFromStudents = [
+        ...new Set(allStudents.map((student) => student.year)),
+      ]
+        .filter((year) => year)
+        .sort()
+      return yearsFromStudents
+    } else {
+      // For teachers, get years from subjects they teach
+      return [
+        ...new Set(availableSubjects.map((subject) => subject.yearTaught)),
+      ]
+        .filter((y) => y !== "")
+        .sort()
+    }
+  }
+
+  const availableYears = getAvailableYears()
+  const yearOptions = ["All Years", ...availableYears]
+
+  // Get filtered subjects based on selected year - for HOD show all subjects from attendance records
+  const getFilteredSubjects = () => {
+    if (userRole === "hod") {
+      // For HOD, get subjects from attendance records based on selected year
+      if (selectedYear === "All Years") {
+        return [
+          ...new Set(allAttendanceRecords.map((record) => record.subjectName)),
+        ]
+          .filter(Boolean)
+          .sort()
+      } else {
+        return [
+          ...new Set(
+            allAttendanceRecords
+              .filter((record) => record.year === selectedYear)
+              .map((record) => record.subjectName)
+          ),
+        ]
+          .filter(Boolean)
+          .sort()
+      }
+    } else {
+      // For teachers, filter from their assigned subjects
+      if (selectedYear === "All Years") {
+        return availableSubjects
+      }
+      return availableSubjects.filter(
+        (subject) => subject.yearTaught === selectedYear
+      )
+    }
+  }
 
   // Derive available batches based on selected subject and year
   const availableBatches = useMemo(() => {
@@ -63,15 +114,27 @@ const FullSubjectPracticalSummary = ({
     return ["All Batches"] // Default if no specific subject/year or no practicals
   }, [selectedSubject, selectedYear, availableSubjects])
 
-  // Get unique subjects from attendance records
+  // Get unique subjects from attendance records based on selected year
   const getUniqueSubjects = () => {
     const subjectSet = new Set()
-    allAttendanceRecords.forEach((record) => {
-      if (record.subjectName) {
-        subjectSet.add(record.subjectName)
-      }
-    })
-    return Array.from(subjectSet)
+
+    // If a specific year is selected, only show subjects from that year
+    if (selectedYear !== "All Years") {
+      allAttendanceRecords.forEach((record) => {
+        if (record.year === selectedYear && record.subjectName) {
+          subjectSet.add(record.subjectName)
+        }
+      })
+    } else {
+      // If "All Years" is selected, show all subjects
+      allAttendanceRecords.forEach((record) => {
+        if (record.subjectName) {
+          subjectSet.add(record.subjectName)
+        }
+      })
+    }
+
+    return Array.from(subjectSet).sort()
   }
 
   useEffect(() => {
@@ -191,6 +254,11 @@ const FullSubjectPracticalSummary = ({
         sessionsCount = sessionType === "practical" ? 2 : 1,
       } = record
 
+      // Skip records that don't match the selected year filter
+      if (selectedYear !== "All Years" && recordYear !== selectedYear) {
+        return
+      }
+
       // Process each student's attendance in this record
       attendanceData?.forEach((attendance) => {
         const { studentId, isPresent } = attendance
@@ -254,11 +322,21 @@ const FullSubjectPracticalSummary = ({
     return Array.from(depts)
   }
 
-  // Filter students for display
+  // Filter students for display - only show students that match selected year
   const getFilteredStudents = () => {
     return allStudents.filter((student) => {
       const studentStats = attendanceStats.stats[student.id]
-      return studentStats && studentStats.totalSessions > 0
+
+      // Check if student has attendance data
+      const hasAttendanceData = studentStats && studentStats.totalSessions > 0
+
+      // Check year filter
+      let matchesYearFilter = true
+      if (selectedYear !== "All Years") {
+        matchesYearFilter = student.year === selectedYear
+      }
+
+      return hasAttendanceData && matchesYearFilter
     })
   }
 
@@ -274,6 +352,7 @@ const FullSubjectPracticalSummary = ({
     const headers = [
       "Roll No.",
       "Name of Student",
+      "Year",
       "Batch",
       ...attendanceStats.subjects.flatMap((subject) => [
         `${subject} (L Attended)`,
@@ -288,7 +367,12 @@ const FullSubjectPracticalSummary = ({
 
     const rows = filteredStudents.map((student) => {
       const studentStats = attendanceStats.stats[student.id]
-      const rowData = [student.rollNo, student.name, student.batch || "N/A"]
+      const rowData = [
+        student.rollNo,
+        student.name,
+        student.year || "N/A",
+        student.batch || "N/A",
+      ]
 
       attendanceStats.subjects.forEach((subject) => {
         const subjectStats = studentStats.subjectWise[subject]
@@ -323,7 +407,12 @@ const FullSubjectPracticalSummary = ({
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob)
       link.setAttribute("href", url)
-      link.setAttribute("download", "attendance_summary.csv")
+      link.setAttribute(
+        "download",
+        `attendance_summary_${selectedYear}_${
+          new Date().toISOString().split("T")[0]
+        }.csv`
+      )
       link.style.visibility = "hidden"
       document.body.appendChild(link)
       link.click()
@@ -358,6 +447,11 @@ const FullSubjectPracticalSummary = ({
               <BookOpen className="h-6 w-6 text-blue-600" />
               <h1 className="text-2xl font-bold text-gray-900">
                 Full Subject-wise & Practical-wise Summary
+                {selectedYear !== "All Years" && (
+                  <span className="text-lg font-normal text-gray-600 ml-2">
+                    ({selectedYear})
+                  </span>
+                )}
               </h1>
             </div>
             <div className="flex items-center space-x-2">
@@ -377,26 +471,6 @@ const FullSubjectPracticalSummary = ({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subject
-              </label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => {
-                  setSelectedSubject(e.target.value)
-                  setSelectedBatch("All Batches")
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Subjects</option>
-                {availableSubjects.map((subject, index) => (
-                  <option key={index} value={subject.subjectName}>
-                    {subject.subjectName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Year
               </label>
               <select
@@ -413,6 +487,32 @@ const FullSubjectPracticalSummary = ({
                     {yearOption === "" ? "All Years" : yearOption}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Subject
+              </label>
+              <select
+                value={selectedSubject}
+                onChange={(e) => {
+                  setSelectedSubject(e.target.value)
+                  setSelectedBatch("All Batches")
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Subjects</option>
+                {userRole === "hod"
+                  ? getFilteredSubjects().map((subject, index) => (
+                      <option key={index} value={subject}>
+                        {subject}
+                      </option>
+                    ))
+                  : getFilteredSubjects().map((subject, index) => (
+                      <option key={index} value={subject.subjectName}>
+                        {subject.subjectName}
+                      </option>
+                    ))}
               </select>
             </div>
             {selectedSubject && selectedYear !== "All Years" && (
@@ -460,9 +560,31 @@ const FullSubjectPracticalSummary = ({
         )}
 
         {/* Attendance Table */}
-        {filteredStudents.length === 0 ? (
+        {selectedYear === "All Years" ? (
           <div className="p-8 text-center text-gray-500">
-            No attendance data found for the selected filters.
+            <div className="flex flex-col items-center space-y-3">
+              <Calendar className="h-12 w-12 text-gray-400" />
+              <div className="text-lg font-medium text-gray-600">
+                Please select a specific year to view attendance summary
+              </div>
+              <div className="text-sm text-gray-500">
+                Choose a year from the dropdown above to see student attendance
+                data
+              </div>
+            </div>
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <div className="flex flex-col items-center space-y-3">
+              <Users className="h-12 w-12 text-gray-400" />
+              <div className="text-lg font-medium text-gray-600">
+                No attendance data found for {selectedYear}
+              </div>
+              <div className="text-sm text-gray-500">
+                Try adjusting your filters or check if attendance has been
+                recorded for this year
+              </div>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -474,6 +596,9 @@ const FullSubjectPracticalSummary = ({
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
                     Name of Student
+                  </th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
+                    Year
                   </th>
                   <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
                     Batch
@@ -525,6 +650,11 @@ const FullSubjectPracticalSummary = ({
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200 font-medium">
                         {student.name}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-gray-600 border-r border-gray-200">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                          {student.year || "N/A"}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-center text-sm text-gray-600 border-r border-gray-200">
                         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
@@ -603,68 +733,72 @@ const FullSubjectPracticalSummary = ({
         )}
 
         {/* Summary Statistics */}
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {filteredStudents.length}
+        {selectedYear !== "All Years" && filteredStudents.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">
+                  {filteredStudents.length}
+                </div>
+                <div className="text-sm text-gray-500">Total Students</div>
               </div>
-              <div className="text-sm text-gray-500">Total Students</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {
-                  filteredStudents.filter((student) => {
-                    const stats = attendanceStats.stats[student.id]
-                    if (!stats) return false
-                    const percentage = getAttendancePercentage(
-                      stats.attendedSessions,
-                      stats.totalSessions
-                    )
-                    return percentage >= attendanceThreshold
-                  }).length
-                }
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {
+                    filteredStudents.filter((student) => {
+                      const stats = attendanceStats.stats[student.id]
+                      if (!stats) return false
+                      const percentage = getAttendancePercentage(
+                        stats.attendedSessions,
+                        stats.totalSessions
+                      )
+                      return percentage >= attendanceThreshold
+                    }).length
+                  }
+                </div>
+                <div className="text-sm text-gray-500">
+                  Above {attendanceThreshold}%
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                Above {attendanceThreshold}%
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {
+                    filteredStudents.filter((student) => {
+                      const stats = attendanceStats.stats[student.id]
+                      if (!stats) return false
+                      const percentage = getAttendancePercentage(
+                        stats.attendedSessions,
+                        stats.totalSessions
+                      )
+                      return (
+                        percentage >= 60 && percentage < attendanceThreshold
+                      )
+                    }).length
+                  }
+                </div>
+                <div className="text-sm text-gray-500">
+                  60-{attendanceThreshold}%
+                </div>
               </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {
-                  filteredStudents.filter((student) => {
-                    const stats = attendanceStats.stats[student.id]
-                    if (!stats) return false
-                    const percentage = getAttendancePercentage(
-                      stats.attendedSessions,
-                      stats.totalSessions
-                    )
-                    return percentage >= 60 && percentage < attendanceThreshold
-                  }).length
-                }
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {
+                    filteredStudents.filter((student) => {
+                      const stats = attendanceStats.stats[student.id]
+                      if (!stats) return false
+                      const percentage = getAttendancePercentage(
+                        stats.attendedSessions,
+                        stats.totalSessions
+                      )
+                      return percentage < 60
+                    }).length
+                  }
+                </div>
+                <div className="text-sm text-gray-500">Below 60%</div>
               </div>
-              <div className="text-sm text-gray-500">
-                60-{attendanceThreshold}%
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {
-                  filteredStudents.filter((student) => {
-                    const stats = attendanceStats.stats[student.id]
-                    if (!stats) return false
-                    const percentage = getAttendancePercentage(
-                      stats.attendedSessions,
-                      stats.totalSessions
-                    )
-                    return percentage < 60
-                  }).length
-                }
-              </div>
-              <div className="text-sm text-gray-500">Below 60%</div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

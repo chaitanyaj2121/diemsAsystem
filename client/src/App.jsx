@@ -29,10 +29,10 @@ function App() {
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         {/* Default or Home Route */}
         <Route path="/" element={<Home />} />
-        <Route
+        {/* <Route
           path="/add-specific-students"
           element={<AddSpecificStudents />}
-        />
+        /> */}
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student-login" element={<StudentLogin />} />
         <Route path="/student-signup" element={<StudentSignup />} />
