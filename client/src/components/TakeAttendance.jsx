@@ -312,7 +312,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       // To replace alert, you would typically use a state variable to show a success message in the UI.
       // For example, you could set a 'successMessage' state and display it conditionally.
       // For now, I'll just log to console as per previous instructions to avoid alert().
-      console.log("Attendance submitted successfully!")
+      // console.log("Attendance submitted successfully!")
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -324,6 +324,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         setAttendance({})
         setMessage("") // Clear message after reset
       }, 100)
+      alert("Attendance submitted successfully!")
     } catch (err) {
       console.error("Error submitting attendance:", err)
       setError("Failed to submit attendance. Please try again.")

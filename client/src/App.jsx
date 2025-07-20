@@ -20,7 +20,7 @@ function App() {
       <Routes>
         {/* HoD Routes */}
         <Route path="/hod-login" element={<HodLogin />} />
-        {/* <Route path="/hod-signup" element={<HodSignup />} /> */}
+        <Route path="/hod-signup" element={<HodSignup />} />
         <Route path="/hod-dashboard" element={<HodDashboard />} />
         {/* Teacher Routes */}
         <Route path="/teacher-login" element={<TeacherLogin />} />
