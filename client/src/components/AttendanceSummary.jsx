@@ -62,16 +62,16 @@ const AttendanceSummary = ({ teacherId, year, department, subjectsTaught }) => {
       setLoading(true)
       setError("")
       setMessage("")
-      console.log(
-        "Fetching data for department:",
-        department,
-        "selected year:",
-        selectedYear,
-        "selected batch:",
-        selectedBatch, // Log selected batch
-        "selected subject:",
-        selectedSubject // Log selected subject
-      )
+      // console.log(
+      //   "Fetching data for department:",
+      //   department,
+      //   "selected year:",
+      //   selectedYear,
+      //   "selected batch:",
+      //   selectedBatch, // Log selected batch
+      //   "selected subject:",
+      //   selectedSubject // Log selected subject
+      // )
       try {
         // Fetch students based on department and selected year
         let studentsQueryRef = collection(db, "students")
@@ -92,10 +92,10 @@ const AttendanceSummary = ({ teacherId, year, department, subjectsTaught }) => {
           ...doc.data(),
         }))
         setAllStudents(fetchedStudents)
-        console.log(
-          "Fetched Students (based on current filters):",
-          fetchedStudents
-        )
+        // console.log(
+        //   "Fetched Students (based on current filters):",
+        //   fetchedStudents
+        // )
 
         // Fetch attendance records based on department, selected year, and selected subject
         let attendanceQueryRef = collection(db, "attendance")
@@ -125,17 +125,15 @@ const AttendanceSummary = ({ teacherId, year, department, subjectsTaught }) => {
           ...doc.data(),
         }))
         setAllAttendanceRecords(fetchedAttendance)
-        console.log(
-          "Fetched Attendance Records (based on current filters):",
-          fetchedAttendance
-        )
+        // console.log(
+        //   "Fetched Attendance Records (based on current filters):",
+        //   fetchedAttendance
+        // )
 
         setMessage("Data loaded. Select filters to view summary.")
       } catch (err) {
-        console.error("Error fetching all data for attendance summary:", err)
-        setError(
-          "Failed to load attendance data. Please check console for details."
-        )
+        // console.error("Error fetching all data for attendance summary:", err)
+        setError("Failed to load attendance data")
       } finally {
         setLoading(false)
       }
@@ -150,28 +148,28 @@ const AttendanceSummary = ({ teacherId, year, department, subjectsTaught }) => {
   }, [department, selectedYear, selectedSubject, selectedBatch]) // Added selectedBatch and selectedSubject to dependencies
 
   const attendanceSummary = useMemo(() => {
-    console.log("--- Recalculating Attendance Summary ---")
-    console.log("Current selectedYear:", selectedYear)
-    console.log("Current selectedSubject:", selectedSubject)
-    console.log("Current selectedBatch:", selectedBatch)
-    console.log(
-      "Number of allStudents (after fetch filters):",
-      allStudents.length
-    )
-    console.log(
-      "Number of allAttendanceRecords (after fetch filters):",
-      allAttendanceRecords.length
-    )
+    // console.log("--- Recalculating Attendance Summary ---")
+    // console.log("Current selectedYear:", selectedYear)
+    // console.log("Current selectedSubject:", selectedSubject)
+    // console.log("Current selectedBatch:", selectedBatch)
+    // console.log(
+    //   "Number of allStudents (after fetch filters):",
+    //   allStudents.length
+    // )
+    // console.log(
+    //   "Number of allAttendanceRecords (after fetch filters):",
+    //   allAttendanceRecords.length
+    // )
 
     if (!allStudents.length) {
-      console.log("No students available after initial fetch.")
+      // console.log("No students available after initial fetch.")
       return []
     }
     // Attendance records might be empty if no classes have been taken for the selected filters
     if (!allAttendanceRecords.length) {
-      console.log(
-        "No attendance records found for current filters. Returning empty summary."
-      )
+      // console.log(
+      //   "No attendance records found for current filters. Returning empty summary."
+      // )
       // We can return students with 0/0 attendance if we want to show them
       return allStudents
         .map((student) => ({
@@ -312,10 +310,10 @@ const AttendanceSummary = ({ teacherId, year, department, subjectsTaught }) => {
       .filter((s) => s.totalClasses > 0) // Only show students who have had some classes
       .sort((a, b) => a.name.localeCompare(b.name))
 
-    console.log(
-      "Final Attendance Summary (filtered for totalClasses > 0):",
-      finalSummary
-    )
+    // console.log(
+    //   "Final Attendance Summary (filtered for totalClasses > 0):",
+    //   finalSummary
+    // )
     return finalSummary
   }, [
     allStudents,

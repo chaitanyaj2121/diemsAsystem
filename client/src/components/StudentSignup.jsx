@@ -107,7 +107,7 @@ const StudentSignup = () => {
       // Navigate to student dashboard
       navigate("/student-login")
     } catch (err) {
-      console.error("Signup error:", err)
+      // console.error("Signup error:", err)
       let errorMessage = "Registration failed. Please try again."
 
       switch (err.code) {

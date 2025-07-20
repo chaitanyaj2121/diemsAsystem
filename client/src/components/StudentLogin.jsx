@@ -73,7 +73,7 @@ const StudentLogin = () => {
       // Navigate to student dashboard
       navigate("/student-dashboard")
     } catch (err) {
-      console.error("Login error:", err)
+      // console.error("Login error:", err)
       let errorMessage = "Login failed. Please try again."
 
       switch (err.code) {

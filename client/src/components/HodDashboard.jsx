@@ -49,7 +49,7 @@ function HodDashboard() {
             navigate("/hod-login")
           }
         } catch (err) {
-          console.error("Error fetching HoD data:", err)
+          // console.error("Error fetching HoD data:", err)
           setError("Failed to load HoD data.")
           await signOut(auth)
           navigate("/hod-login")
@@ -73,7 +73,7 @@ function HodDashboard() {
       console.error("Error logging out:", err)
       // Using a custom message box instead of alert()
       // You would replace this with your actual modal/message box component
-      console.log("Failed to log out.")
+      // console.log("Failed to log out.")
     }
   }
 

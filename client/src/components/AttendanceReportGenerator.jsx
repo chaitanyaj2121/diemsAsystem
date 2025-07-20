@@ -89,7 +89,7 @@ const AttendanceReportGenerator = ({
         setMessage("Data loaded. Click 'Download CSV' to generate the report.")
       }
     } catch (err) {
-      console.error("Error fetching data for report:", err)
+      // console.error("Error fetching data for report:", err)
       setError("Failed to load attendance data. Please try again.")
     } finally {
       setLoading(false)

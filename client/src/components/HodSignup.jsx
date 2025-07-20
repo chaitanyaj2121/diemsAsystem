@@ -16,12 +16,13 @@ function HodSignup() {
   const navigate = useNavigate()
 
   const departments = [
-    "Computer Science",
-    "Electrical Engineering",
+    "Computer science and engineering (Artificial Intelligence and Machine Learning)",
+    "Computer Science and engineering",
     "Mechanical Engineering",
     "Civil Engineering",
-    "Electronics & Communication",
+    "Electronics & Telecommunication",
     "Information Technology",
+    "Electrical Engineering",
   ]
 
   const handleSubmit = async (e) => {
@@ -61,7 +62,7 @@ function HodSignup() {
       alert("HoD registered successfully!")
       navigate("/hod-login") // Redirect to login page after successful signup
     } catch (err) {
-      console.error("Error signing up:", err.message)
+      // console.error("Error signing up:", err.message)
       if (err.code === "auth/email-already-in-use") {
         setError("The email address is already in use by another account.")
       } else if (err.code === "auth/invalid-email") {

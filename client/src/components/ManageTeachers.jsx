@@ -54,7 +54,7 @@ function ManageTeachers({ departmentId }) {
         }))
         setTeachers(teachersList)
       } catch (err) {
-        console.error("Error fetching teachers:", err)
+        // console.error("Error fetching teachers:", err)
         setError("Failed to fetch teachers.")
       } finally {
         setLoading(false)
@@ -197,7 +197,7 @@ function ManageTeachers({ departmentId }) {
       }))
       setTeachers(teachersList)
     } catch (err) {
-      console.error("Error adding teacher:", err)
+      // console.error("Error adding teacher:", err)
       setError("Failed to add teacher.")
     } finally {
       setAddLoading(false)
@@ -212,7 +212,7 @@ function ManageTeachers({ departmentId }) {
         alert("Teacher deleted successfully!")
         setTeachers(teachers.filter((teacher) => teacher.id !== teacherId))
       } catch (err) {
-        console.error("Error deleting teacher:", err)
+        // console.error("Error deleting teacher:", err)
         setError("Failed to delete teacher.")
       }
     }

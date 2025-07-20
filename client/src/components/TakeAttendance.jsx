@@ -51,28 +51,28 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
     }
 
     // DEBUG: Log dependency changes - These are kept for debugging purposes as requested previously
-    console.log("--- useEffect Dependencies Changed ---")
-    console.log("selectedSubject:", selectedSubject)
-    console.log("selectedYear:", selectedYear)
-    console.log("sessionType:", sessionType)
-    console.log("selectedBatch:", selectedBatch)
-    console.log("department:", department)
-    console.log("currentSubject:", currentSubject)
+    // console.log("--- useEffect Dependencies Changed ---")
+    // console.log("selectedSubject:", selectedSubject)
+    // console.log("selectedYear:", selectedYear)
+    // console.log("sessionType:", sessionType)
+    // console.log("selectedBatch:", selectedBatch)
+    // console.log("department:", department)
+    // console.log("currentSubject:", currentSubject)
 
     if (selectedSubject && selectedYear && sessionType && department) {
       if (sessionType === "lecture") {
         // For lectures, fetch all students of the year
-        console.log("Fetching students for lecture...")
+        // console.log("Fetching students for lecture...")
         fetchStudentsForAttendance(department, selectedYear)
       } else if (sessionType === "practical") {
         if (selectedBatch) {
           // Only fetch for practicals if a batch is selected
-          console.log("Fetching students for practical batch:", selectedBatch)
+          // console.log("Fetching students for practical batch:", selectedBatch)
           fetchStudentsForBatch(department, selectedYear, selectedBatch)
         } else {
-          console.log(
-            "Practical session selected, but no batch chosen yet. Waiting..."
-          )
+          // console.log(
+          //   "Practical session selected, but no batch chosen yet. Waiting..."
+          // )
           setStudentsForAttendance([]) // Clear students if batch is not selected yet
           setAttendance({})
         }
@@ -90,9 +90,9 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
   const fetchStudentsForAttendance = async (dept, year) => {
     setLoading(true)
     setError("")
-    console.log(
-      `[DEBUG] fetchStudentsForAttendance called: Dept=${dept}, Year=${year}`
-    )
+    // console.log(
+    //   `[DEBUG] fetchStudentsForAttendance called: Dept=${dept}, Year=${year}`
+    // )
     try {
       const studentsQuery = query(
         collection(db, "students"),
@@ -130,9 +130,9 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       })
       setAttendance(initialAttendance)
       setMessage("")
-      console.log(`[DEBUG] Found ${studentsData.length} students for lecture.`)
+      // console.log(`[DEBUG] Found ${studentsData.length} students for lecture.`)
     } catch (err) {
-      console.error("Error fetching students for attendance:", err)
+      // console.error("Error fetching students for attendance:", err)
       setError("Failed to load students for this subject/year.")
     } finally {
       setLoading(false)
@@ -142,9 +142,9 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
   const fetchStudentsForBatch = async (dept, year, fullBatchString) => {
     setLoading(true)
     setError("")
-    console.log(
-      `[DEBUG] fetchStudentsForBatch called: Dept=${dept}, Year=${year}, FullBatchString=${fullBatchString}`
-    )
+    // console.log(
+    //   `[DEBUG] fetchStudentsForBatch called: Dept=${dept}, Year=${year}, FullBatchString=${fullBatchString}`
+    // )
     try {
       // Correctly extract "B1" from "3rd Year - Batch B1"
       let batchCode = null
@@ -161,7 +161,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         batchCode = fullBatchString
       }
 
-      console.log(`[DEBUG] Extracted batchCode for query: "${batchCode}"`)
+      // console.log(`[DEBUG] Extracted batchCode for query: "${batchCode}"`)
 
       // IMPORTANT: Verify that 'batchCode' is indeed "B1", "B2", "B3", etc.
       // and that your student documents have a field named 'batch' with these exact values.
@@ -203,16 +203,16 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       })
       setAttendance(initialAttendance)
       setMessage("")
-      console.log(
-        `[DEBUG] Found ${studentsData.length} students for batch "${batchCode}".`
-      )
+      // console.log(
+      //   `[DEBUG] Found ${studentsData.length} students for batch "${batchCode}".`
+      // )
       if (studentsData.length === 0) {
-        console.log(
-          `[DEBUG] No students found. Check if students in Firestore under Department="${dept}", Year="${year}", and Batch="${batchCode}" exist and match exactly.`
-        )
+        // console.log(
+        //   `[DEBUG] No students found. Check if students in Firestore under Department="${dept}", Year="${year}", and Batch="${batchCode}" exist and match exactly.`
+        // )
       }
     } catch (err) {
-      console.error("Error fetching students for batch:", err)
+      // console.error("Error fetching students for batch:", err)
       setError("Failed to load students for this batch.")
     } finally {
       setLoading(false)
@@ -277,9 +277,9 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
           batchCodeToStore = selectedBatch // Fallback if format is different (unlikely with current data)
         }
       }
-      console.log(
-        `[DEBUG] Batch code to store in attendance record: "${batchCodeToStore}"`
-      )
+      // console.log(
+      //   `[DEBUG] Batch code to store in attendance record: "${batchCodeToStore}"`
+      // )
 
       const attendanceRecord = {
         teacherId: teacherId,
@@ -326,7 +326,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       }, 100)
       alert("Attendance submitted successfully!")
     } catch (err) {
-      console.error("Error submitting attendance:", err)
+      // console.error("Error submitting attendance:", err)
       setError("Failed to submit attendance. Please try again.")
     } finally {
       setLoading(false)

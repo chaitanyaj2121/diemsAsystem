@@ -54,7 +54,7 @@ function ManageStudents({ departmentId }) {
         }))
         setStudents(studentsList)
       } catch (err) {
-        console.error("Error fetching students:", err)
+        // console.error("Error fetching students:", err)
         setError("Failed to fetch students.")
       } finally {
         setLoading(false)
@@ -123,7 +123,7 @@ function ManageStudents({ departmentId }) {
       }))
       setStudents(updatedStudentsList)
     } catch (err) {
-      console.error("Error adding student:", err)
+      // console.error("Error adding student:", err)
       setError("Failed to add student.")
     } finally {
       setAddLoading(false)
@@ -138,7 +138,7 @@ function ManageStudents({ departmentId }) {
         alert("Student deleted successfully!")
         setStudents(students.filter((student) => student.id !== studentId)) // Update UI
       } catch (err) {
-        console.error("Error deleting student:", err)
+        // console.error("Error deleting student:", err)
         setError("Failed to delete student.")
       }
     }

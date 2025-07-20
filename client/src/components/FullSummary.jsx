@@ -202,7 +202,7 @@ const FullSubjectPracticalSummary = ({
 
         setMessage("Data loaded successfully.")
       } catch (err) {
-        console.error("Error fetching data:", err)
+        // console.error("Error fetching data:", err)
         setError("Failed to load attendance data. Please try again.")
       } finally {
         setLoading(false)

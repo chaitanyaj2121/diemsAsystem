@@ -36,7 +36,7 @@ function HodLogin() {
         setError("You are not authorized to access the HoD dashboard.")
       }
     } catch (err) {
-      console.error("Error logging in:", err.message)
+      // console.error("Error logging in:", err.message)
       if (
         err.code === "auth/invalid-email" ||
         err.code === "auth/user-not-found" ||

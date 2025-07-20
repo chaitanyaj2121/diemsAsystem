@@ -476,14 +476,14 @@ const AddSpecificStudents = () => {
           userId: null, // Will be set during student signup/login if they create an account
         }
         await addDoc(collection(db, "students"), studentDoc)
-        console.log(
-          `Added student: ${student.name} (${student.rollNo}) to ${student.batch}`
-        )
+        // console.log(
+        //   `Added student: ${student.name} (${student.rollNo}) to ${student.batch}`
+        // )
         setAddedCount((prev) => prev + 1)
       }
       setStatus(`Successfully added ${studentData.length} students!`)
     } catch (e) {
-      console.error("Error adding documents: ", e)
+      // console.error("Error adding documents: ", e)
       setStatus(`Error adding students: ${e.message}`)
     } finally {
       setLoading(false)

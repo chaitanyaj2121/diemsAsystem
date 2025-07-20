@@ -48,7 +48,7 @@ const StudentDashboard = () => {
           }))
           setAttendanceRecords(fetchedAttendance) // Store fetched attendance records in state
         } catch (err) {
-          console.error("Error fetching attendance data:", err)
+          // console.error("Error fetching attendance data:", err)
           setError("Failed to load attendance data.")
         } finally {
           setLoading(false) // Set loading to false regardless of success or failure
@@ -174,10 +174,10 @@ const StudentDashboard = () => {
       await signOut(auth) // Sign out from Firebase
       localStorage.removeItem("studentData") // Clear student data from local storage
       // Instead of alert(), log to console or use a custom UI message
-      console.log("Logout Success!!")
+      // console.log("Logout Success!!")
       navigate("/") // Navigate to the home page or login page
     } catch (err) {
-      console.error("Logout error:", err)
+      // console.error("Logout error:", err)
       setError("Failed to log out.") // Set error message if logout fails
     }
   }
