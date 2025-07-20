@@ -1,5 +1,3 @@
-// src/components/TakeAttendance.jsx
-
 import React, { useState, useEffect } from "react"
 import { db } from "../firebase/config"
 import {
@@ -102,10 +100,28 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         where("year", "==", year)
       )
       const studentsSnapshot = await getDocs(studentsQuery)
-      const studentsData = studentsSnapshot.docs.map((doc) => ({
+      let studentsData = studentsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
+
+      // Sort students by rollNo in ascending numerical order
+      studentsData.sort((a, b) => {
+        if (a.rollNo && b.rollNo) {
+          // Extract numeric part from rollNo (e.g., "AI3133" -> 3133)
+          const numA = parseInt(a.rollNo.replace(/[^0-9]/g, ""), 10)
+          const numB = parseInt(b.rollNo.replace(/[^0-9]/g, ""), 10)
+
+          // Perform numeric comparison if both are valid numbers
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB
+          }
+          // Fallback to localeCompare if numeric extraction fails or is not applicable
+          return a.rollNo.localeCompare(b.rollNo)
+        }
+        return 0 // Don't sort if rollNo is missing
+      })
+
       setStudentsForAttendance(studentsData)
       // Initialize all students as present by default
       const initialAttendance = {}
@@ -157,10 +173,28 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         where("batch", "==", batchCode) // Use extracted batch code (e.g., "B1", "B2", etc.)
       )
       const studentsSnapshot = await getDocs(studentsQuery)
-      const studentsData = studentsSnapshot.docs.map((doc) => ({
+      let studentsData = studentsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
+
+      // Sort students by rollNo in ascending numerical order
+      studentsData.sort((a, b) => {
+        if (a.rollNo && b.rollNo) {
+          // Extract numeric part from rollNo (e.g., "AI3133" -> 3133)
+          const numA = parseInt(a.rollNo.replace(/[^0-9]/g, ""), 10)
+          const numB = parseInt(b.rollNo.replace(/[^0-9]/g, ""), 10)
+
+          // Perform numeric comparison if both are valid numbers
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB
+          }
+          // Fallback to localeCompare if numeric extraction fails or is not applicable
+          return a.rollNo.localeCompare(b.rollNo)
+        }
+        return 0 // Don't sort if rollNo is missing
+      })
+
       setStudentsForAttendance(studentsData)
       // Initialize all students as present by default
       const initialAttendance = {}
@@ -275,7 +309,11 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         }`
       )
       // console.log("[DEBUG] Attendance record submitted:", attendanceRecord)
-      alert("Attendence submitted successfully!") // Changed to custom message box later
+      // To replace alert, you would typically use a state variable to show a success message in the UI.
+      // For example, you could set a 'successMessage' state and display it conditionally.
+      // For now, I'll just log to console as per previous instructions to avoid alert().
+      console.log("Attendance submitted successfully!")
+
       // Reset form after successful submission
       setTimeout(() => {
         setSelectedSubject("")
@@ -459,10 +497,6 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      {/* Swapped order of Student Name and Roll Number */}
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student Name
-                      </th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Roll Number
                       </th>
@@ -479,11 +513,7 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {studentsForAttendance.map((student) => (
                       <tr key={student.id} className="hover:bg-gray-50">
-                        {/* Swapped order of Student Name and Roll Number data cells */}
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {student.name}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">
                           {student.rollNo}
                         </td>
                         {sessionType === "practical" && (
