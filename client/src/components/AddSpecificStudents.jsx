@@ -157,7 +157,7 @@ const studentData = [
   },
   {
     rollNo: "AI3126",
-    name: "PATEL MOHAMMAD ZAKWAN RIYAZUDDIN PATEL",
+    name: "PATEL MOHAMMAD ZAKWAN  chRIYAZUDDIN PATEL",
     email: "zakwanpatel100@gmail.com",
     batch: "B2",
   },
