@@ -469,8 +469,9 @@ const AddSpecificStudents = () => {
           name: student.name,
           rollNo: student.rollNo,
           email: student.email,
-          department: "Computer Science",
-          year: "3rd Year",
+          department:
+            "Computer science and engineering (Artificial Intelligence and Machine Learning)",
+          year: "Final Year",
           batch: student.batch,
           createdAt: Timestamp.fromDate(new Date()),
           userId: null, // Will be set during student signup/login if they create an account

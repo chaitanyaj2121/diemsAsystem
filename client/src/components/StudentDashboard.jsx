@@ -175,6 +175,7 @@ const StudentDashboard = () => {
       localStorage.removeItem("studentData") // Clear student data from local storage
       // Instead of alert(), log to console or use a custom UI message
       // console.log("Logout Success!!")
+      alert("Logout Success!!")
       navigate("/") // Navigate to the home page or login page
     } catch (err) {
       // console.error("Logout error:", err)
