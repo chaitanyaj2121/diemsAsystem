@@ -41,10 +41,13 @@ function HodSignup() {
 
     setLoading(true)
     try {
+      // Convert email to lowercase for consistent storage and authentication
+      const lowercasedEmail = email.toLowerCase()
+
       // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        email,
+        lowercasedEmail, // Use the lowercased email for Firebase Auth
         password
       )
       const user = userCredential.user
@@ -53,7 +56,7 @@ function HodSignup() {
       await setDoc(doc(db, "hods", user.uid), {
         firstName,
         lastName,
-        email,
+        email: lowercasedEmail, // Store the lowercased email in Firestore
         department,
         role: "HoD", // Assigning a role for clarity
         createdAt: new Date(),

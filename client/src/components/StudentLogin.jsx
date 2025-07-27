@@ -1,5 +1,3 @@
-// src/components/StudentLogin.jsx
-
 import React, { useState } from "react"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { auth, db } from "../firebase/config"
@@ -27,10 +25,13 @@ const StudentLogin = () => {
     setLoading(true)
 
     try {
+      // Convert email to lowercase before authentication and Firestore query
+      const lowercasedEmail = email.toLowerCase()
+
       // First, authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
+        lowercasedEmail, // Use lowercased email for authentication
         password
       )
       const user = userCredential.user
@@ -38,7 +39,7 @@ const StudentLogin = () => {
       // Check if student exists in Firestore
       const studentsQuery = query(
         collection(db, "students"),
-        where("email", "==", email)
+        where("email", "==", lowercasedEmail) // Use lowercased email for Firestore query
       )
       const studentsSnapshot = await getDocs(studentsQuery)
 
@@ -73,7 +74,6 @@ const StudentLogin = () => {
       // Navigate to student dashboard
       navigate("/student-dashboard")
     } catch (err) {
-      // console.error("Login error:", err)
       let errorMessage = "Login failed. Please try again."
 
       switch (err.code) {

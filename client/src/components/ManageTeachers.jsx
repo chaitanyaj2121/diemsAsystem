@@ -31,10 +31,10 @@ function ManageTeachers({ departmentId }) {
 
   const yearsOptions = ["1st Year", "2nd Year", "3rd Year", "Final Year"]
 
-  // Generate batch options (assuming batches A, B, C, D, E for each year)
+  // Generate batch options (assuming batches B1, B2, B3, B4, B5 for each year)
   const generateBatchOptions = (year) => {
     const batchLetters = ["B1", "B2", "B3", "B4", "B5"]
-    return batchLetters.map((letter) => `${year} - Batch ${letter}`)
+    return batchLetters.map((letter) => `${year} - ${letter}`) // Changed to match "1st Year - B1" format
   }
 
   // Fetch teachers when component mounts or departmentId changes
@@ -167,9 +167,12 @@ function ManageTeachers({ departmentId }) {
     }
 
     try {
+      // Convert teacherEmail to lowercase before adding to Firestore
+      const lowercasedTeacherEmail = teacherEmail.trim().toLowerCase()
+
       await addDoc(collection(db, "teachers"), {
         name: teacherName.trim(),
-        email: teacherEmail.trim(),
+        email: lowercasedTeacherEmail, // Store email in lowercase
         department: departmentId,
         subjectsTaught: subjectsTaught,
         createdAt: new Date(),

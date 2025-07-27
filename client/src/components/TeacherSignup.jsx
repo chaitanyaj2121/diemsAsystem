@@ -39,10 +39,13 @@ function TeacherSignup() {
     }
 
     try {
-      // 1. Create user in Firebase Authentication
+      // Convert the input email to lowercase for consistent storage and authentication
+      const lowercasedEmail = email.toLowerCase()
+
+      // 1. Create user in Firebase Authentication using the lowercased email
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        email,
+        lowercasedEmail,
         password
       )
       const user = userCredential.user
@@ -50,7 +53,8 @@ function TeacherSignup() {
       // 2. Attempt to link this new user's UID to an existing teacher profile in Firestore
       //    This assumes the HoD has already added the teacher's email.
       const teachersRef = collection(db, "teachers")
-      const q = query(teachersRef, where("email", "==", email.trim()))
+      // Use the lowercased email for the Firestore query
+      const q = query(teachersRef, where("email", "==", lowercasedEmail.trim()))
       const querySnapshot = await getDocs(q)
 
       if (!querySnapshot.empty) {

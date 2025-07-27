@@ -18,20 +18,27 @@ function HodLogin() {
     setLoading(true)
 
     try {
+      // Convert the input email to lowercase for consistent checking
+      const lowercasedEmail = email.toLowerCase()
+
+      // Authenticate with Firebase Auth using the lowercased email
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
+        lowercasedEmail, // Use lowercased email for authentication
         password
       )
       const user = userCredential.user
 
+      // Fetch HoD document from Firestore using the user's UID
       const hodDocRef = doc(db, "hods", user.uid)
       const hodDocSnap = await getDoc(hodDocRef)
 
+      // Verify if the document exists and the role is 'HoD'
       if (hodDocSnap.exists() && hodDocSnap.data().role === "HoD") {
         alert("Logged in successfully!")
         navigate("/hod-dashboard")
       } else {
+        // If the document doesn't exist or role is not HoD, sign out the user
         await auth.signOut()
         setError("You are not authorized to access the HoD dashboard.")
       }

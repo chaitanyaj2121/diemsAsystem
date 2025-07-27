@@ -26,14 +26,16 @@ function TeacherLogin() {
     setError("")
     setLoading(true)
 
-    console.log("🔍 Starting login process for email:", email)
+    // Convert email to lowercase for consistent handling
+    const lowercasedEmail = email.toLowerCase()
+    console.log("🔍 Starting login process for email:", lowercasedEmail)
 
     try {
       // Step 1: Firebase Auth login
       console.log("🔑 Attempting Firebase Auth login...")
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
+        lowercasedEmail, // Use the lowercased email here
         password
       )
       const user = userCredential.user
@@ -46,7 +48,7 @@ function TeacherLogin() {
       console.log("🔍 Searching for teacher profile by email...")
       const teachersQuery = query(
         collection(db, "teachers"),
-        where("email", "==", email)
+        where("email", "==", lowercasedEmail) // Use the lowercased email for the query
       )
 
       const teachersSnapshot = await getDocs(teachersQuery)
@@ -111,7 +113,7 @@ function TeacherLogin() {
           setError(`Invalid role: ${finalRole}. Expected: Teacher`)
         }
       } else {
-        // Step 3: Fallback - try finding by userId
+        // Step 3: Fallback - try finding by userId (if the email query failed, maybe UID directly matches)
         console.log("🔍 Trying to find teacher by userId as fallback...")
         try {
           const teacherDocRef = doc(db, "teachers", user.uid)
@@ -157,7 +159,7 @@ function TeacherLogin() {
         setError(
           "Authentication successful, but you are not registered as a teacher or your profile is incomplete. Please contact your HoD."
         )
-        await auth.signOut()
+        await auth.signOut() // Sign out if not a valid teacher profile
       }
     } catch (err) {
       console.error("❌ Error during teacher login:", err)
@@ -167,7 +169,8 @@ function TeacherLogin() {
 
       if (
         err.code === "auth/user-not-found" ||
-        err.code === "auth/wrong-password"
+        err.code === "auth/wrong-password" ||
+        err.code === "auth/invalid-credential" //firebase newer versions might return this for invalid email/password
       ) {
         setError("Invalid email or password.")
       } else if (err.code === "auth/invalid-email") {

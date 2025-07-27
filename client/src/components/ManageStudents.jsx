@@ -92,10 +92,13 @@ function ManageStudents({ departmentId }) {
     }
 
     try {
+      // Convert studentEmail to lowercase before adding to Firestore
+      const lowercasedEmail = studentEmail.trim().toLowerCase()
+
       await addDoc(collection(db, "students"), {
         name: studentName.trim(),
         rollNo: studentRollNo.trim(),
-        email: studentEmail.trim(),
+        email: lowercasedEmail, // Store email in lowercase
         department: departmentId,
         year: selectedYear,
         batch: selectedBatch, // Store the selected batch

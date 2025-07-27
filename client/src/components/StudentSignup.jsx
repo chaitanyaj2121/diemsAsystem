@@ -43,10 +43,13 @@ const StudentSignup = () => {
     }
 
     try {
+      // Convert the input email to lowercase for consistent checking
+      const lowercasedEmail = email.toLowerCase()
+
       // First, check if a student with this email exists in Firestore
       const studentsQuery = query(
         collection(db, "students"),
-        where("email", "==", email.toLowerCase())
+        where("email", "==", lowercasedEmail) // Use lowercasedEmail for Firestore query
       )
       const studentsSnapshot = await getDocs(studentsQuery)
 
@@ -71,7 +74,7 @@ const StudentSignup = () => {
         return
       }
 
-      // Check if student account already exists
+      // Check if student account already exists (userId present in Firestore document)
       if (studentData.userId) {
         setError(
           "An account already exists for this student. Please use the login page."
@@ -80,10 +83,10 @@ const StudentSignup = () => {
         return
       }
 
-      // Create Firebase Auth account
+      // Create Firebase Auth account using the lowercased email
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        email,
+        lowercasedEmail, // Use lowercasedEmail for Firebase Auth creation
         password
       )
       const user = userCredential.user
@@ -103,11 +106,10 @@ const StudentSignup = () => {
           userId: user.uid,
         })
       )
-      alert("Signup success! login now !!")
-      // Navigate to student dashboard
+      alert("Signup success! Please login now.") // Changed alert message slightly
+      // Navigate to student login
       navigate("/student-login")
     } catch (err) {
-      // console.error("Signup error:", err)
       let errorMessage = "Registration failed. Please try again."
 
       switch (err.code) {
