@@ -136,6 +136,14 @@ const FullSubjectPracticalSummary = ({
     return Array.from(subjectSet).sort()
   }
 
+  // Check if a subject has practical sessions
+  const subjectHasPractical = (subjectName) => {
+    return allAttendanceRecords.some(
+      (record) =>
+        record.subjectName === subjectName && record.sessionType === "practical"
+    )
+  }
+
   useEffect(() => {
     if (year) {
       setSelectedYear(year)
@@ -454,12 +462,17 @@ const FullSubjectPracticalSummary = ({
       "Name of Student",
       "Year",
       "Batch",
-      ...attendanceStats.subjects.flatMap((subject) => [
-        `${subject} (L Attended)`,
-        `${subject} (L Total)`,
-        `${subject} (P Attended)`,
-        `${subject} (P Total)`,
-      ]),
+      ...attendanceStats.subjects.flatMap((subject) => {
+        const hasPractical = subjectHasPractical(subject)
+        return hasPractical
+          ? [
+              `${subject} (L Attended)`,
+              `${subject} (L Total)`,
+              `${subject} (P Attended)`,
+              `${subject} (P Total)`,
+            ]
+          : [`${subject} (L Attended)`, `${subject} (L Total)`]
+      }),
       "Overall Attended Sessions",
       "Overall Regular Total Sessions",
       "Overall Extra Sessions Added",
@@ -477,13 +490,20 @@ const FullSubjectPracticalSummary = ({
 
       attendanceStats.subjects.forEach((subject) => {
         const subjectStats = studentStats.subjectWise[subject]
+        const hasPractical = subjectHasPractical(subject)
+
         if (subjectStats) {
           rowData.push(subjectStats.lecture.attended)
           rowData.push(subjectStats.lecture.regularTotal)
-          rowData.push(subjectStats.practical.attended)
-          rowData.push(subjectStats.practical.regularTotal)
+          if (hasPractical) {
+            rowData.push(subjectStats.practical.attended)
+            rowData.push(subjectStats.practical.regularTotal)
+          }
         } else {
-          rowData.push("", "", "", "")
+          rowData.push("", "")
+          if (hasPractical) {
+            rowData.push("", "")
+          }
         }
       })
 
@@ -731,16 +751,19 @@ const FullSubjectPracticalSummary = ({
                   >
                     Name of Student
                   </th>
-                  {attendanceStats.subjects.map((subject) => (
-                    <th
-                      key={subject}
-                      scope="col"
-                      colSpan="4"
-                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-r border-gray-200"
-                    >
-                      {subject}
-                    </th>
-                  ))}
+                  {attendanceStats.subjects.map((subject) => {
+                    const hasPractical = subjectHasPractical(subject)
+                    return (
+                      <th
+                        key={subject}
+                        scope="col"
+                        colSpan={hasPractical ? "4" : "2"}
+                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-r border-gray-200"
+                      >
+                        {subject}
+                      </th>
+                    )
+                  })}
                   <th
                     scope="col"
                     colSpan="4"
@@ -758,36 +781,48 @@ const FullSubjectPracticalSummary = ({
                     scope="col"
                     className="sticky left-16 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider z-10"
                   ></th>
-                  {attendanceStats.subjects.flatMap((subject) => [
-                    <th
-                      key={`${subject}-L-Attended`}
-                      scope="col"
-                      className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-200"
-                    >
-                      L Attended
-                    </th>,
-                    <th
-                      key={`${subject}-L-Total`}
-                      scope="col"
-                      className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      L Total
-                    </th>,
-                    <th
-                      key={`${subject}-P-Attended`}
-                      scope="col"
-                      className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-200"
-                    >
-                      P Attended
-                    </th>,
-                    <th
-                      key={`${subject}-P-Total`}
-                      scope="col"
-                      className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
-                    >
-                      P Total
-                    </th>,
-                  ])}
+                  {attendanceStats.subjects.flatMap((subject) => {
+                    const hasPractical = subjectHasPractical(subject)
+                    const columns = [
+                      <th
+                        key={`${subject}-L-Attended`}
+                        scope="col"
+                        className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-200"
+                      >
+                        L Attended
+                      </th>,
+                      <th
+                        key={`${subject}-L-Total`}
+                        scope="col"
+                        className={`px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                          !hasPractical ? "border-r border-gray-200" : ""
+                        }`}
+                      >
+                        L Total
+                      </th>,
+                    ]
+
+                    if (hasPractical) {
+                      columns.push(
+                        <th
+                          key={`${subject}-P-Attended`}
+                          scope="col"
+                          className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-200"
+                        >
+                          P Attended
+                        </th>,
+                        <th
+                          key={`${subject}-P-Total`}
+                          scope="col"
+                          className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200"
+                        >
+                          P Total
+                        </th>
+                      )
+                    }
+
+                    return columns
+                  })}
                   <th
                     scope="col"
                     className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-200"
@@ -834,20 +869,30 @@ const FullSubjectPracticalSummary = ({
                       </td>
                       {attendanceStats.subjects.map((subject) => {
                         const subjectStats = studentStats.subjectWise[subject]
+                        const hasPractical = subjectHasPractical(subject)
+
                         return (
                           <React.Fragment key={`${student.id}-${subject}`}>
                             <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center border-l border-gray-200">
                               {subjectStats?.lecture.attended || 0}
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                            <td
+                              className={`px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center ${
+                                !hasPractical ? "border-r border-gray-200" : ""
+                              }`}
+                            >
                               {subjectStats?.lecture.regularTotal || 0}
                             </td>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center border-l border-gray-200">
-                              {subjectStats?.practical.attended || 0}
-                            </td>
-                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center border-r border-gray-200">
-                              {subjectStats?.practical.regularTotal || 0}
-                            </td>
+                            {hasPractical && (
+                              <>
+                                <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center border-l border-gray-200">
+                                  {subjectStats?.practical.attended || 0}
+                                </td>
+                                <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500 text-center border-r border-gray-200">
+                                  {subjectStats?.practical.regularTotal || 0}
+                                </td>
+                              </>
+                            )}
                           </React.Fragment>
                         )
                       })}
