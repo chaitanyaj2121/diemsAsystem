@@ -6,15 +6,20 @@ import { collection, query, where, getDocs } from "firebase/firestore"
 import { useNavigate } from "react-router-dom"
 import {
   Loader, // Used for loading indicator
+  Info, // For info banners - added this import
 } from "lucide-react" // Lucide-react for icons
 
 const StudentDashboard = () => {
   // State variables for student data, attendance, loading, and errors
   const [studentData, setStudentData] = useState(null)
-  const [overallAttendance, setOverallAttendance] = useState(0)
+  // Renamed for clarity: allRegularAttendanceRecords vs extraAttendanceRecords
+  const [allRegularAttendanceRecords, setAllRegularAttendanceRecords] =
+    useState([])
+  const [extraAttendanceRecords, setExtraAttendanceRecords] = useState([]) // State to store extra attendance records
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [attendanceRecords, setAttendanceRecords] = useState([]) // Stores all relevant attendance records for the student's year/department
+  // overallAttendance state is now derived from studentAttendanceStats.overall.percentage
+  // const [overallAttendance, setOverallAttendance] = useState(0) // This state is no longer strictly needed as it's derived
   const navigate = useNavigate() // Hook for navigation
 
   // Effect hook to fetch student data and relevant attendance records
@@ -28,27 +33,65 @@ const StudentDashboard = () => {
       if (storedStudentData) {
         const parsedData = JSON.parse(storedStudentData)
         setStudentData(parsedData) // Set student data to state
+        console.log("Student Data from localStorage:", parsedData) // Log student data
 
         try {
-          // Construct a query to fetch attendance records relevant to the student's department and year
+          // --- Fetch Regular Attendance Records ---
           let attendanceQueryRef = collection(db, "attendance")
-          let attendanceWhereClauses = [
+          let regularAttendanceWhereClauses = [
             where("department", "==", parsedData.department),
             where("year", "==", parsedData.year),
           ]
 
-          // Execute the query and get the attendance snapshot
-          const attendanceSnapshot = await getDocs(
-            query(attendanceQueryRef, ...attendanceWhereClauses)
+          const regularAttendanceSnapshot = await getDocs(
+            query(attendanceQueryRef, ...regularAttendanceWhereClauses)
           )
-          // Map document data to an array of attendance records
-          const fetchedAttendance = attendanceSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          setAttendanceRecords(fetchedAttendance) // Store fetched attendance records in state
+          const fetchedRegularAttendance = regularAttendanceSnapshot.docs.map(
+            (doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })
+          )
+
+          // Filter regular attendance records in memory to only include those relevant to the current student
+          const studentFilteredRegularAttendance =
+            fetchedRegularAttendance.filter(
+              (record) =>
+                record.attendanceData &&
+                record.attendanceData.some(
+                  (att) => att.studentId === parsedData.id
+                )
+            )
+          setAllRegularAttendanceRecords(studentFilteredRegularAttendance)
+          console.log(
+            "Fetched Regular Attendance Records (filtered):",
+            studentFilteredRegularAttendance
+          ) // Log filtered regular attendance
+
+          // --- Fetch Extra Attendance Records ---
+          let extraAttendanceQueryRef = collection(db, "extraAttendance")
+          let extraAttendanceWhereClauses = [
+            where("studentId", "==", parsedData.id), // Assuming studentData.id is the unique student identifier used in extraAttendance
+            where("department", "==", parsedData.department),
+            where("year", "==", parsedData.year),
+          ]
+
+          const extraAttendanceSnapshot = await getDocs(
+            query(extraAttendanceQueryRef, ...extraAttendanceWhereClauses)
+          )
+          const fetchedExtraAttendance = extraAttendanceSnapshot.docs.map(
+            (doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            })
+          )
+          setExtraAttendanceRecords(fetchedExtraAttendance) // Store fetched extra attendance records
+          console.log(
+            "Fetched Extra Attendance Records:",
+            fetchedExtraAttendance
+          ) // Log extra attendance
         } catch (err) {
-          // console.error("Error fetching attendance data:", err)
+          console.error("Error fetching attendance data:", err)
           setError("Failed to load attendance data.")
         } finally {
           setLoading(false) // Set loading to false regardless of success or failure
@@ -67,39 +110,39 @@ const StudentDashboard = () => {
 
   // Memoized calculation for comprehensive attendance statistics for the current student
   const studentAttendanceStats = useMemo(() => {
-    // Return default empty stats if student data or attendance records are not available
-    if (!studentData || attendanceRecords.length === 0) {
-      return { overall: { attended: 0, total: 0, percentage: 0 }, subjects: {} }
+    // Return default empty stats if student data is not available
+    if (!studentData) {
+      console.log("studentData is null, returning default stats.")
+      return {
+        overall: {
+          regularTotal: 0,
+          regularAttended: 0,
+          extraAdded: 0,
+          finalAttended: 0,
+          percentage: 0,
+        },
+        subjects: {},
+        hasAttendanceData: false, // Flag to indicate if any attendance data exists
+      }
     }
 
-    // Initialize stats structure
     const stats = {
-      overall: { attended: 0, total: 0, percentage: 0 },
-      subjects: {}, // Stores subject-wise attendance: subjectName: { lecture: {total, attended}, practical: {total, attended}, totalSessions, attendedSessions, percentage }
+      overall: {
+        regularTotal: 0,
+        regularAttended: 0,
+        extraAdded: 0,
+        finalAttended: 0,
+        percentage: 0,
+      },
+      // Stores subject-wise attendance: subjectName: { lecture: {regularTotal, regularAttended, finalAttended}, practical: {regularTotal, regularAttended, finalAttended}, regularTotalSessions, regularAttendedSessions, finalAttendedSessions, percentage }
+      subjects: {},
+      hasAttendanceData: false,
     }
 
     const uniqueSubjects = new Set() // To collect all unique subjects from fetched records
 
-    // First pass: Identify all unique subjects relevant to the student's year/department
-    attendanceRecords.forEach((record) => {
-      if (record.subjectName) {
-        uniqueSubjects.add(record.subjectName)
-      }
-    })
-
-    // Initialize subject-wise stats for all identified unique subjects
-    Array.from(uniqueSubjects).forEach((subjectName) => {
-      stats.subjects[subjectName] = {
-        lecture: { total: 0, attended: 0 },
-        practical: { total: 0, attended: 0 },
-        totalSessions: 0,
-        attendedSessions: 0,
-        percentage: 0,
-      }
-    })
-
-    // Second pass: Process each attendance record to calculate stats
-    attendanceRecords.forEach((record) => {
+    // First pass: Process regular attendance records to get base totals and attended sessions
+    allRegularAttendanceRecords.forEach((record) => {
       const {
         subjectName,
         sessionType,
@@ -108,77 +151,186 @@ const StudentDashboard = () => {
         sessionsCount = sessionType === "practical" ? 2 : 1, // Default sessions count
       } = record
 
-      // Skip if subject name is missing or not initialized in stats
-      if (!subjectName || !stats.subjects[subjectName]) {
-        return
+      if (subjectName) {
+        uniqueSubjects.add(subjectName)
       }
 
-      const studentActualBatch = studentData.batch || "N/A" // Get the student's actual batch
-      const currentRecordBatch = recordBatch || "N/A" // Get the record's batch, default to "N/A"
+      const studentActualBatch = studentData.batch || "N/A"
+      const currentRecordBatch = recordBatch || "N/A"
 
-      // Determine if this attendance record applies to the current student
-      // Lectures apply to all students in the department/year.
-      // Practicals apply only if the record's batch matches the student's batch.
       const appliesToStudent =
         sessionType === "lecture" || currentRecordBatch === studentActualBatch
 
       if (appliesToStudent) {
-        // Check if the current student was present in this specific record
         const isStudentPresentInRecord = attendanceData.some(
           (item) => item.studentId === studentData.id && item.isPresent
         )
 
-        // Update subject-wise statistics
-        const subjectStats = stats.subjects[subjectName]
-        subjectStats.totalSessions += sessionsCount
-        subjectStats[sessionType].total += sessionsCount
-        if (isStudentPresentInRecord) {
-          subjectStats.attendedSessions += sessionsCount
-          subjectStats[sessionType].attended += sessionsCount
+        // Initialize subject stats if not already
+        if (!stats.subjects[subjectName]) {
+          stats.subjects[subjectName] = {
+            lecture: { regularTotal: 0, regularAttended: 0, finalAttended: 0 },
+            practical: {
+              regularTotal: 0,
+              regularAttended: 0,
+              finalAttended: 0,
+            },
+            regularTotalSessions: 0,
+            regularAttendedSessions: 0,
+            finalAttendedSessions: 0, // Will include subject-specific extra
+            percentage: 0,
+          }
         }
 
-        // Update overall statistics
-        stats.overall.total += sessionsCount
+        const subjectStats = stats.subjects[subjectName]
+        subjectStats.regularTotalSessions += sessionsCount
+        subjectStats[sessionType].regularTotal += sessionsCount
+
         if (isStudentPresentInRecord) {
-          stats.overall.attended += sessionsCount
+          subjectStats.regularAttendedSessions += sessionsCount
+          subjectStats[sessionType].regularAttended += sessionsCount
         }
+
+        stats.overall.regularTotal += sessionsCount
+        if (isStudentPresentInRecord) {
+          stats.overall.regularAttended += sessionsCount
+        }
+        stats.hasAttendanceData = true // Mark that some attendance data exists
       }
     })
 
+    console.log("After regular attendance pass:", {
+      overallRegularTotal: stats.overall.regularTotal,
+      overallRegularAttended: stats.overall.regularAttended,
+      subjectsStats: JSON.parse(JSON.stringify(stats.subjects)), // Deep copy for logging
+    })
+
+    // Initialize finalAttended for subjects and overall with regular attended counts
+    for (const subjectName in stats.subjects) {
+      const subjectStats = stats.subjects[subjectName]
+      subjectStats.finalAttendedSessions = subjectStats.regularAttendedSessions
+      subjectStats.lecture.finalAttended = subjectStats.lecture.regularAttended
+      subjectStats.practical.finalAttended =
+        subjectStats.practical.regularAttended
+    }
+    stats.overall.finalAttended = stats.overall.regularAttended
+
+    console.log(
+      "After initializing finalAttended with regular attended counts:",
+      {
+        overallFinalAttended: stats.overall.finalAttended,
+        subjectsFinalAttended: JSON.parse(JSON.stringify(stats.subjects)),
+      }
+    )
+
+    // Second pass: Process extra attendance records
+    extraAttendanceRecords.forEach((extraRecord) => {
+      const {
+        studentId: extraRecordStudentId,
+        subjectName,
+        extraSessions: numExtraSessions,
+        type, // "extra_attendance_total" or "extra_attendance_subject"
+        sessionType: extraSessionType = "lecture", // Default for subject-specific extra
+      } = extraRecord
+
+      if (extraRecordStudentId === studentData.id && numExtraSessions > 0) {
+        stats.overall.extraAdded += numExtraSessions // Track total extra sessions given
+
+        if (type === "extra_attendance_total") {
+          const oldFinalAttended = stats.overall.finalAttended
+          const valueBeforeCap = oldFinalAttended + numExtraSessions
+          stats.overall.finalAttended = Math.min(
+            valueBeforeCap,
+            stats.overall.regularTotal // Capped at regular total
+          )
+          console.log(
+            `Applying extra_attendance_total for student ${studentData.id}: Added ${numExtraSessions}. Old finalAttended: ${oldFinalAttended}, Value before cap: ${valueBeforeCap}, New finalAttended: ${stats.overall.finalAttended}, Capped at regularTotal: ${stats.overall.regularTotal}`
+          )
+        } else if (
+          type === "extra_attendance_subject" &&
+          subjectName &&
+          stats.subjects[subjectName]
+        ) {
+          const subjectStats = stats.subjects[subjectName]
+          const oldSubjectFinalAttended = subjectStats.finalAttendedSessions
+          const valueBeforeSubjectCap =
+            oldSubjectFinalAttended + numExtraSessions
+
+          subjectStats.finalAttendedSessions = Math.min(
+            valueBeforeSubjectCap,
+            subjectStats.regularTotalSessions // Capped at subject's regular total
+          )
+          console.log(
+            `Applying extra_attendance_subject for ${subjectName}: Added ${numExtraSessions}. Old subject finalAttended: ${oldSubjectFinalAttended}, Value before cap: ${valueBeforeSubjectCap}, New subject finalAttended: ${subjectStats.finalAttendedSessions}, Capped at regularTotalSessions: ${subjectStats.regularTotalSessions}`
+          )
+
+          if (subjectStats[extraSessionType]) {
+            const oldSessionFinalAttended =
+              subjectStats[extraSessionType].finalAttended
+            const valueBeforeSessionCap =
+              oldSessionFinalAttended + numExtraSessions
+            subjectStats[extraSessionType].finalAttended = Math.min(
+              valueBeforeSessionCap,
+              subjectStats[extraSessionType].regularTotal // Capped at specific session type's regular total
+            )
+            console.log(
+              `Applying extra_attendance_subject for ${subjectName} (${extraSessionType}): Added ${numExtraSessions}. Old session finalAttended: ${oldSessionFinalAttended}, Value before cap: ${valueBeforeSessionCap}, New session finalAttended: ${subjectStats[extraSessionType].finalAttended}, Capped at session regularTotal: ${subjectStats[extraSessionType].regularTotal}`
+            )
+          }
+        }
+        stats.hasAttendanceData = true
+      }
+    })
+
+    console.log(
+      "After extra attendance pass (final stats before percentage calculation):",
+      {
+        overall: stats.overall,
+        subjects: JSON.parse(JSON.stringify(stats.subjects)),
+      }
+    )
+
     // Calculate percentages after processing all records
     stats.overall.percentage =
-      stats.overall.total > 0
-        ? ((stats.overall.attended / stats.overall.total) * 100).toFixed(2)
+      stats.overall.regularTotal > 0
+        ? (
+            (stats.overall.finalAttended / stats.overall.regularTotal) *
+            100
+          ).toFixed(2)
         : 0
 
     for (const subjectName in stats.subjects) {
       const subjectStats = stats.subjects[subjectName]
       subjectStats.percentage =
-        subjectStats.totalSessions > 0
+        subjectStats.regularTotalSessions > 0
           ? (
-              (subjectStats.attendedSessions / subjectStats.totalSessions) *
+              (subjectStats.finalAttendedSessions /
+                subjectStats.regularTotalSessions) *
               100
             ).toFixed(2)
           : 0
     }
 
-    // Update the overallAttendance state for display in the main card
-    setOverallAttendance(stats.overall.percentage)
+    console.log("Final calculated stats (with percentages):", stats)
 
     return stats
-  }, [studentData, attendanceRecords]) // Re-run memoization if studentData or attendanceRecords change
+  }, [studentData, allRegularAttendanceRecords, extraAttendanceRecords])
+
+  // The overallAttendance state is now directly derived from studentAttendanceStats.overall.percentage
+  // and is used for the main card display.
+  // This useEffect is no longer strictly needed as overallAttendance is directly used from studentAttendanceStats
+  // but keeping it for consistency if other parts of the app rely on this state.
+  const overallAttendance = studentAttendanceStats.overall.percentage
 
   // Handler for user logout
   const handleLogout = async () => {
     try {
       await signOut(auth) // Sign out from Firebase
       localStorage.removeItem("studentData") // Clear student data from local storage
-      // Instead of alert(), log to console or use a custom UI message
-      // console.log("Logout Success!!")
-      alert("Logout Success!!")
+      alert("Logout Success!!") // Consider replacing with a custom modal/toast
       navigate("/") // Navigate to the home page or login page
     } catch (err) {
-      // console.error("Logout error:", err)
+      console.error("Logout error:", err)
       setError("Failed to log out.") // Set error message if logout fails
     }
   }
@@ -371,23 +523,54 @@ const StudentDashboard = () => {
             <div className="text-center">
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
                 <div className="text-6xl mb-4">
-                  {getAttendanceIcon(parseFloat(overallAttendance))}
+                  {getAttendanceIcon(
+                    parseFloat(studentAttendanceStats.overall.percentage)
+                  )}
                 </div>
                 <div className="text-5xl font-bold mb-2">
-                  {overallAttendance}%
+                  {studentAttendanceStats.overall.percentage}%
                 </div>
                 <p className="text-blue-100 text-lg font-medium mb-4">
                   Overall Attendance
                 </p>
 
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between items-center bg-blue-700/30 rounded-lg p-2 text-sm">
+                    <span>Regular Total:</span>
+                    <span className="font-semibold">
+                      {studentAttendanceStats.overall.regularTotal}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center bg-blue-700/30 rounded-lg p-2 text-sm">
+                    <span>Regular Attended:</span>
+                    <span className="font-semibold">
+                      {studentAttendanceStats.overall.regularAttended}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center bg-blue-700/30 rounded-lg p-2 text-sm">
+                    <span>Extra Sessions Added:</span>
+                    <span className="font-semibold">
+                      {studentAttendanceStats.overall.extraAdded}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center bg-blue-700/30 rounded-lg p-2 text-sm">
+                    <span>Final Attended:</span>
+                    <span className="font-semibold">
+                      {studentAttendanceStats.overall.finalAttended}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="mt-4">
-                  {parseFloat(overallAttendance) >= 85 ? (
+                  {parseFloat(studentAttendanceStats.overall.percentage) >=
+                  85 ? (
                     <div className="bg-green-500/20 border border-green-400 rounded-lg p-3">
                       <span className="text-green-100 font-medium">
                         🌟 Excellent Performance!
                       </span>
                     </div>
-                  ) : parseFloat(overallAttendance) >= 75 ? (
+                  ) : parseFloat(studentAttendanceStats.overall.percentage) >=
+                    75 ? (
                     <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-3">
                       <span className="text-yellow-100 font-medium">
                         ✅ Good Standing
@@ -406,8 +589,29 @@ const StudentDashboard = () => {
           </div>
         </div>
 
+        {/* Extra Attendance Info Banner */}
+        {studentAttendanceStats.overall.extraAdded > 0 && (
+          <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 mb-8 shadow-lg">
+            <div className="flex items-start space-x-4">
+              <div className="text-2xl text-green-600">
+                <Info className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-green-800 mb-2">
+                  Extra Attendance Sessions Applied
+                </h3>
+                <p className="text-green-700">
+                  You have been credited with{" "}
+                  <strong>{studentAttendanceStats.overall.extraAdded}</strong>{" "}
+                  extra attendance sessions, boosting your attended count.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Attendance Alert (if overall attendance is below 75%) */}
-        {parseFloat(overallAttendance) < 75 && (
+        {parseFloat(studentAttendanceStats.overall.percentage) < 75 && (
           <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-lg p-6 mb-8 shadow-lg">
             <div className="flex items-start space-x-4">
               <div className="text-3xl">🚨</div>
@@ -417,8 +621,8 @@ const StudentDashboard = () => {
                 </h3>
                 <p className="text-red-700 mb-3">
                   Your overall attendance is{" "}
-                  <strong>{overallAttendance}%</strong>, which is below the
-                  required 75% minimum.
+                  <strong>{studentAttendanceStats.overall.percentage}%</strong>,
+                  which is below the required 75% minimum.
                 </p>
                 <div className="bg-red-100 rounded-lg p-3">
                   <p className="text-sm text-red-800 font-medium">
@@ -482,21 +686,21 @@ const StudentDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
                           <span className="font-semibold">
-                            {stats.lecture.attended}
+                            {stats.lecture.finalAttended}
                           </span>{" "}
-                          / {stats.lecture.total}
+                          / {stats.lecture.regularTotal}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
                           <span className="font-semibold">
-                            {stats.practical.attended}
+                            {stats.practical.finalAttended}
                           </span>{" "}
-                          / {stats.practical.total}
+                          / {stats.practical.regularTotal}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
                           <span className="font-semibold">
-                            {stats.attendedSessions}
+                            {stats.finalAttendedSessions}
                           </span>{" "}
-                          / {stats.totalSessions}
+                          / {stats.regularTotalSessions}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
                           <span
@@ -528,27 +732,24 @@ const StudentDashboard = () => {
           </div>
         )}
 
-        {/* No Overall Data State (if overallAttendance is 0 and no subject data) */}
-        {loading === false &&
-          parseFloat(overallAttendance) === 0 &&
-          Object.keys(studentAttendanceStats.subjects).length === 0 && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-12 text-center">
-              <div className="text-6xl mb-4">📊</div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                No Overall Attendance Data Available
-              </h3>
-              <p className="text-gray-600 text-lg mb-6">
-                There are no attendance records for your department and year
-                yet.
+        {/* No Overall Data State (if no attendance data at all) */}
+        {!studentAttendanceStats.hasAttendanceData && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-12 text-center">
+            <div className="text-6xl mb-4">📊</div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              No Overall Attendance Data Available
+            </h3>
+            <p className="text-gray-600 text-lg mb-6">
+              There are no attendance records for your department and year yet.
+            </p>
+            <div className="bg-blue-50 rounded-xl p-4 inline-block">
+              <p className="text-blue-800 font-medium">
+                Don't worry! Attendance data will appear here once classes
+                begin.
               </p>
-              <div className="bg-blue-50 rounded-xl p-4 inline-block">
-                <p className="text-blue-800 font-medium">
-                  Don't worry! Attendance data will appear here once classes
-                  begin.
-                </p>
-              </div>
             </div>
-          )}
+          </div>
+        )}
       </div>
     </div>
   )

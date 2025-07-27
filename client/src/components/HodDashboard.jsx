@@ -11,6 +11,7 @@ import ManageTeachers from "./ManageTeachers"
 import ManageStudents from "./ManageStudents"
 import AttendanceSummary from "./AttendanceSummary"
 import FullSummary from "./FullSummary" // Import the FullSummary component
+import ExtraAttendance from "./ExtraAttendance" // Import the new ExtraAttendance component
 // Assuming DefaulterList is another component you might have
 // import DefaulterList from "./DefaulterList"; // Uncomment if you have this component
 
@@ -20,6 +21,7 @@ function HodDashboard() {
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState("teachers") // Default active tab
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // New state for mobile sidebar
+  const [showExtraAttendance, setShowExtraAttendance] = useState(false) // New state for extra attendance modal
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -133,6 +135,27 @@ function HodDashboard() {
           <span className="text-sm md:text-lg hidden md:block">
             Welcome, {hodData.firstName} {hodData.lastName}
           </span>
+          {/* Add Extra Attendance Button */}
+          <button
+            onClick={() => setShowExtraAttendance(true)}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 md:px-4 md:py-2 rounded-md text-xs md:text-sm transition-colors duration-200 flex items-center space-x-1"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              ></path>
+            </svg>
+            <span className="hidden md:inline">Extra Attendance</span>
+            <span className="md:hidden">+</span>
+          </button>
           <button
             onClick={handleLogout}
             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 md:px-4 md:py-2 rounded-md text-xs md:text-sm transition-colors duration-200"
@@ -261,6 +284,16 @@ function HodDashboard() {
           ) : null} */}
         </main>
       </div>
+
+      {/* Extra Attendance Modal */}
+      {showExtraAttendance && (
+        <ExtraAttendance
+          department={hodData.department}
+          year={hodData.year}
+          teacherId={hodData.uid}
+          onClose={() => setShowExtraAttendance(false)}
+        />
+      )}
     </div>
   )
 }
