@@ -156,9 +156,7 @@ function TeacherLogin() {
 
         // If we reach here, teacher was not found
         console.log("❌ Teacher profile not found in Firestore")
-        setError(
-          "Authentication successful, but you are not registered as a teacher or your profile is incomplete. Please contact your HoD."
-        )
+        setError("You are not authorized to access the Teachers dashboard.")
         await auth.signOut() // Sign out if not a valid teacher profile
       }
     } catch (err) {
