@@ -27,12 +27,18 @@ const TeacherDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // New state for mobile sidebar
   const navigate = useNavigate()
 
+  // In your TeacherDashboard.jsx useEffect hook, replace the alert line with:
+
   useEffect(() => {
     // Get teacher data from localStorage
     const storedTeacherData = localStorage.getItem("teacherData")
     if (storedTeacherData) {
       const parsedData = JSON.parse(storedTeacherData)
       setTeacherData(parsedData)
+
+      // PERSONALIZED SUCCESS ALERT WITH TEACHER NAME
+      alert(`Login Success!! Welcome ${parsedData.name} `)
+
       // Fetch students only if department is available
       if (parsedData.department) {
         fetchStudents(parsedData.department)
