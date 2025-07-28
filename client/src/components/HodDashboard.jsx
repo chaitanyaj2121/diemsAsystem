@@ -184,7 +184,7 @@ function HodDashboard() {
             {[
               { id: "teachers", label: "Manage Teachers" },
               { id: "students", label: "Manage Students" },
-              { id: "attendance", label: "Attendance Statistics" },
+              // { id: "attendance", label: "Attendance Statistics" },
               { id: "fullSummary", label: "Full Attendance Summary" }, // New tab for FullSummary
               // { id: "defaulters", label: "Defaulter List" }, // Uncomment if DefaulterList is active
             ].map((item) => (
@@ -215,7 +215,7 @@ function HodDashboard() {
           {activeTab === "students" && (
             <ManageStudents departmentId={hodData.department} />
           )}
-          {activeTab === "attendance" && hodData && hodData.department ? (
+          {/* {activeTab === "attendance" && hodData && hodData.department ? (
             <AttendanceSummary
               teacherId={hodData.uid} // Pass HOD's UID if needed by AttendanceSummary
               department={hodData.department}
@@ -234,7 +234,7 @@ function HodDashboard() {
                 Debug info: {JSON.stringify(hodData, null, 2)}
               </p>
             </div>
-          ) : null}
+          ) : null} */}
 
           {/* Render FullSummary when activeTab is "fullSummary" */}
           {activeTab === "fullSummary" && hodData && hodData.department ? (

@@ -508,12 +508,12 @@ const TeacherDashboard = () => {
               isActive={activeTab === "attendance-report"}
               onClick={setActiveTab}
             />
-            <TabButton
+            {/* <TabButton
               id="attendance-summary"
               label="Attendance Summary"
               isActive={activeTab === "attendance-summary"}
               onClick={setActiveTab}
-            />
+            /> */}
             <TabButton
               id="subjects"
               label="Subjects"
@@ -548,13 +548,13 @@ const TeacherDashboard = () => {
               subjectsTaught={teacherData?.subjectsTaught}
             />
           )}
-          {activeTab === "attendance-summary" && (
+          {/* {activeTab === "attendance-summary" && (
             <AttendanceSummary
               teacherId={teacherData?.id}
               department={teacherData?.department}
               subjectsTaught={teacherData?.subjectsTaught}
             />
-          )}
+          )} */}
           {activeTab === "subjects" && <SubjectsTab />}
           {activeTab === "profile" && <ProfileTab />}
         </main>
