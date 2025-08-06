@@ -51,28 +51,28 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
     }
 
     // DEBUG: Log dependency changes - These are kept for debugging purposes as requested previously
-    // console.log("--- useEffect Dependencies Changed ---")
-    // console.log("selectedSubject:", selectedSubject)
-    // console.log("selectedYear:", selectedYear)
-    // console.log("sessionType:", sessionType)
-    // console.log("selectedBatch:", selectedBatch)
-    // console.log("department:", department)
-    // console.log("currentSubject:", currentSubject)
+    console.log("--- useEffect Dependencies Changed ---")
+    console.log("selectedSubject:", selectedSubject)
+    console.log("selectedYear:", selectedYear)
+    console.log("sessionType:", sessionType)
+    console.log("selectedBatch:", selectedBatch)
+    console.log("department:", department)
+    console.log("currentSubject:", currentSubject)
 
     if (selectedSubject && selectedYear && sessionType && department) {
       if (sessionType === "lecture") {
         // For lectures, fetch all students of the year
-        // console.log("Fetching students for lecture...")
+        console.log("Fetching students for lecture...")
         fetchStudentsForAttendance(department, selectedYear)
       } else if (sessionType === "practical") {
         if (selectedBatch) {
           // Only fetch for practicals if a batch is selected
-          // console.log("Fetching students for practical batch:", selectedBatch)
+          console.log("Fetching students for practical batch:", selectedBatch)
           fetchStudentsForBatch(department, selectedYear, selectedBatch)
         } else {
-          // console.log(
-          //   "Practical session selected, but no batch chosen yet. Waiting..."
-          // )
+          console.log(
+            "Practical session selected, but no batch chosen yet. Waiting..."
+          )
           setStudentsForAttendance([]) // Clear students if batch is not selected yet
           setAttendance({})
         }
@@ -90,9 +90,9 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
   const fetchStudentsForAttendance = async (dept, year) => {
     setLoading(true)
     setError("")
-    // console.log(
-    //   `[DEBUG] fetchStudentsForAttendance called: Dept=${dept}, Year=${year}`
-    // )
+    console.log(
+      `[DEBUG] fetchStudentsForAttendance called: Dept=${dept}, Year=${year}`
+    )
     try {
       const studentsQuery = query(
         collection(db, "students"),
@@ -130,9 +130,9 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       })
       setAttendance(initialAttendance)
       setMessage("")
-      // console.log(`[DEBUG] Found ${studentsData.length} students for lecture.`)
+      console.log(`[DEBUG] Found ${studentsData.length} students for lecture.`)
     } catch (err) {
-      // console.error("Error fetching students for attendance:", err)
+      console.error("Error fetching students for attendance:", err)
       setError("Failed to load students for this subject/year.")
     } finally {
       setLoading(false)
@@ -142,41 +142,75 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
   const fetchStudentsForBatch = async (dept, year, fullBatchString) => {
     setLoading(true)
     setError("")
-    // console.log(
-    //   `[DEBUG] fetchStudentsForBatch called: Dept=${dept}, Year=${year}, FullBatchString=${fullBatchString}`
-    // )
+    console.log(
+      `[DEBUG] fetchStudentsForBatch called: Dept=${dept}, Year=${year}, FullBatchString=${fullBatchString}`
+    )
     try {
-      // Correctly extract "B1" from "3rd Year - Batch B1"
+      // Extract batch code from the selected batch string
       let batchCode = null
 
-      // Attempt to parse "3rd Year - Batch B1" -> "B1"
-      const parts = fullBatchString.split(" - ")
-      if (parts.length === 2 && parts[1].startsWith("Batch ")) {
-        batchCode = parts[1].split(" ")[1]
+      // Handle different possible formats:
+      // "Final Year - B3" -> "B3"
+      // "3rd Year - Batch B1" -> "B1"
+      // "Batch B1" -> "B1"
+      // "B1" -> "B1"
+
+      if (fullBatchString.includes(" - ")) {
+        // Split by " - " and get the last part
+        const parts = fullBatchString.split(" - ")
+        const lastPart = parts[parts.length - 1]
+
+        if (lastPart.startsWith("Batch ")) {
+          batchCode = lastPart.replace("Batch ", "")
+        } else {
+          batchCode = lastPart
+        }
       } else if (fullBatchString.startsWith("Batch ")) {
-        // Less likely, but handles just "Batch B1"
-        batchCode = fullBatchString.split(" ")[1]
+        batchCode = fullBatchString.replace("Batch ", "")
       } else {
-        // Fallback if parsing fails, in case the batch string is just "B1" directly
         batchCode = fullBatchString
       }
 
-      // console.log(`[DEBUG] Extracted batchCode for query: "${batchCode}"`)
+      console.log(`[DEBUG] Extracted batchCode for query: "${batchCode}"`)
 
-      // IMPORTANT: Verify that 'batchCode' is indeed "B1", "B2", "B3", etc.
-      // and that your student documents have a field named 'batch' with these exact values.
+      // First, let's check what students exist for this department and year
+      const allStudentsQuery = query(
+        collection(db, "students"),
+        where("department", "==", dept),
+        where("year", "==", year)
+      )
+      const allStudentsSnapshot = await getDocs(allStudentsQuery)
+      const allStudents = allStudentsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
 
+      console.log(
+        `[DEBUG] Total students for ${dept} - ${year}:`,
+        allStudents.length
+      )
+      console.log(
+        `[DEBUG] Available batches:`,
+        [...new Set(allStudents.map((s) => s.batch))].sort()
+      )
+
+      // Now filter for the specific batch
       const studentsQuery = query(
         collection(db, "students"),
         where("department", "==", dept),
         where("year", "==", year),
-        where("batch", "==", batchCode) // Use extracted batch code (e.g., "B1", "B2", etc.)
+        where("batch", "==", batchCode)
       )
       const studentsSnapshot = await getDocs(studentsQuery)
       let studentsData = studentsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
+
+      console.log(
+        `[DEBUG] Students found for batch "${batchCode}":`,
+        studentsData.length
+      )
 
       // Sort students by rollNo in ascending numerical order
       studentsData.sort((a, b) => {
@@ -203,16 +237,22 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       })
       setAttendance(initialAttendance)
       setMessage("")
-      // console.log(
-      //   `[DEBUG] Found ${studentsData.length} students for batch "${batchCode}".`
-      // )
+
       if (studentsData.length === 0) {
-        // console.log(
-        //   `[DEBUG] No students found. Check if students in Firestore under Department="${dept}", Year="${year}", and Batch="${batchCode}" exist and match exactly.`
-        // )
+        console.log(
+          `[DEBUG] No students found for batch "${batchCode}". Available batches are:`,
+          [...new Set(allStudents.map((s) => s.batch))].sort()
+        )
+        setError(
+          `No students found for batch "${batchCode}". Available batches: ${[
+            ...new Set(allStudents.map((s) => s.batch)),
+          ]
+            .sort()
+            .join(", ")}`
+        )
       }
     } catch (err) {
-      // console.error("Error fetching students for batch:", err)
+      console.error("Error fetching students for batch:", err)
       setError("Failed to load students for this batch.")
     } finally {
       setLoading(false)
@@ -268,18 +308,25 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
       // Determine the batch code to store in attendance (e.g., "B1")
       let batchCodeToStore = null
       if (sessionType === "practical" && selectedBatch) {
-        const parts = selectedBatch.split(" - ")
-        if (parts.length === 2 && parts[1].startsWith("Batch ")) {
-          batchCodeToStore = parts[1].split(" ")[1] // Get "B1" from "Batch B1"
+        // Use the same logic as in fetchStudentsForBatch
+        if (selectedBatch.includes(" - ")) {
+          const parts = selectedBatch.split(" - ")
+          const lastPart = parts[parts.length - 1]
+
+          if (lastPart.startsWith("Batch ")) {
+            batchCodeToStore = lastPart.replace("Batch ", "")
+          } else {
+            batchCodeToStore = lastPart
+          }
         } else if (selectedBatch.startsWith("Batch ")) {
-          batchCodeToStore = selectedBatch.split(" ")[1] // Handle if it's just "Batch B1"
+          batchCodeToStore = selectedBatch.replace("Batch ", "")
         } else {
-          batchCodeToStore = selectedBatch // Fallback if format is different (unlikely with current data)
+          batchCodeToStore = selectedBatch
         }
       }
-      // console.log(
-      //   `[DEBUG] Batch code to store in attendance record: "${batchCodeToStore}"`
-      // )
+      console.log(
+        `[DEBUG] Batch code to store in attendance record: "${batchCodeToStore}"`
+      )
 
       const attendanceRecord = {
         teacherId: teacherId,
@@ -308,11 +355,9 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
             : "(1 session recorded)"
         }`
       )
-      // console.log("[DEBUG] Attendance record submitted:", attendanceRecord)
-      // To replace alert, you would typically use a state variable to show a success message in the UI.
-      // For example, you could set a 'successMessage' state and display it conditionally.
-      // For now, I'll just log to console as per previous instructions to avoid alert().
-      // console.log("Attendance submitted successfully!")
+      console.log("[DEBUG] Attendance record submitted:", attendanceRecord)
+
+      alert("Attendance submitted successfully!")
 
       // Reset form after successful submission
       setTimeout(() => {
@@ -324,9 +369,8 @@ const TakeAttendance = ({ teacherId, department, subjectsTaught }) => {
         setAttendance({})
         setMessage("") // Clear message after reset
       }, 100)
-      alert("Attendance submitted successfully!")
     } catch (err) {
-      // console.error("Error submitting attendance:", err)
+      console.error("Error submitting attendance:", err)
       setError("Failed to submit attendance. Please try again.")
     } finally {
       setLoading(false)
